@@ -9,16 +9,17 @@ We want contributing and first-time experiences to be as smooth as possible.
 
 ### Prerequisites
 
-You will need Docker 20.10+ (or Podman 5.5+) to build some project dependencies. 
+You will need Docker 20.10+ (or Podman 5.5+) to build some project dependencies
+and the complete examples.
 
 - [Docker 20.10+](https://docs.docker.com/get-docker/)
 
-You also want Go and, optionally but recommended, TinyGo.
+Building the runtime and command requires Go, Node.js with npm, and `make`.
+TinyGo is optional but recommended for producing the optimized Wasm module.
 
-- [Go 1.25+](https://golang.org/dl/)
+- [Go 1.26+](https://golang.org/dl/)
+- [Node.js](https://nodejs.org/)
 - [TinyGo 0.40+](https://tinygo.org/getting-started/install/) (optional)
-
-You will also need `make` installed.
 
 ### Our Makefile
 
@@ -54,34 +55,32 @@ This task is totally optional and may require `sudo` on some systems.
 
 #### Build Wanix runtime and command
 
-With Docker or Podman running, you can run this to build Wanix:
+Build the JavaScript runtime, Wasm modules, and the `wanix` command:
 
 ```sh
-make build
+make all
 ```
 
-This will build the Wanix runtime (a JavaScript library and WASM module), and
-then the `wanix` toolchain command binary, which embeds the runtime. This binary
-is output to `.local/bin/wanix`, but if you ran `make link`, you should be able
-to just run `wanix`. 
+The JavaScript and Wasm runtime artifacts are output to `dist/`. The command
+binary is output to `.local/bin/wanix`; if you ran `make link`, it will also be
+available as `wanix` in your `PATH`.
 
-If you have TinyGo installed, the WASM module will be built with TinyGo. 
-Otherwise it will use regular Go, which produces a larger binary, but has better
-stacktraces for development and builds faster. 
+By default, the Wasm build produces `dist/wanix.debug.wasm` with Go. If TinyGo
+is installed, it also produces the smaller optimized `dist/wanix.wasm`;
+otherwise the TinyGo build is skipped.
 
-You can force Go (debug build) by setting `WASM_DEBUG` to any non-empty value,
-otherwise TinyGo will be used by default. You can also specifically build the 
-WASM module with one or the other with `make wasm-go` and `make wasm-tinygo`. 
+You can build either Wasm module directly with `make wasm-go` or
+`make wasm-tinygo`.
 
 #### Other build tasks
 
-From here you can run specific `make` tasks for specific components, just run
-`make` to see what's available. For example, you can build just the `wanix` 
-command (`make cmd`), just the runtime (`make runtime`), or either of the 
-runtime components.
+From here you can run specific `make` tasks for specific components; run
+`make` to see what's available. For example, build just the `wanix` command
+with `make cmd`, the JavaScript and Wasm runtime with `make js wasm`, or either
+Wasm module with the targets above.
 
-If you have trouble getting Go or TinyGo configured properly. You can build both
-command and runtime entirely in container, use `make build-docker`. 
+To build the command and runtime entirely in a container, use
+`make build-docker`.
 
 
 ## Directory Layout
