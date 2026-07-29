@@ -89,7 +89,11 @@ export class TaskElement extends WanixElement {
             bindElements = this._childBinds();
         }
         // Model A: binds configure this task's namespace.
-        await this._kernel._setupNamespace(this.rid, this.ns, bindElements);
+        await this.setupNamespace(bindElements);
+    }
+
+    setupNamespace(bindElements = []) {
+        return this._kernel.setupNamespace(this.rid, this.ns, bindElements);
     }
 
     async start() {

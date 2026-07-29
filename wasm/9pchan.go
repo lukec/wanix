@@ -139,26 +139,60 @@ type P9PortReadWriter struct {
 	onRecv js.Func
 	mu     sync.Mutex
 	wbuf   []byte
+	closed bool
+	once   sync.Once
+	err    error
 }
 
+const (
+	remoteImportControlKey      = "__wanixRemoteImport"
+	remoteImportControlAttached = "attached"
+	remoteImportControlClose    = "close"
+	remoteImportControlClosed   = "closed"
+	remoteImportStateKey        = "__wanixRemoteImportState"
+	remoteImportStateClaimed    = "claimed"
+	remoteImportStateRevoked    = "revoked"
+)
+
 func NewP9PortReadWriter(port js.Value) *P9PortReadWriter {
-	rbuf := pipe.NewBuffer(true)
-	onRecv := js.FuncOf(func(this js.Value, args []js.Value) any {
-		data := js.Global().Get("Uint8Array").New(args[0].Get("data"))
+	p := &P9PortReadWriter{
+		port: port,
+		rbuf: pipe.NewBuffer(true),
+	}
+	if state := port.Get(remoteImportStateKey); state.Type() == js.TypeString &&
+		state.String() == remoteImportStateRevoked {
+		p.closed = true
+		p.err = p.rbuf.Close()
+		p.once.Do(func() {})
+		return p
+	}
+
+	// Claim synchronously before installing callbacks. JavaScript close runs on
+	// the same event loop, so it either observes this claim and waits for the
+	// typed close acknowledgement, or it revokes first and this constructor
+	// returns the already-closed reader above.
+	port.Set(remoteImportStateKey, remoteImportStateClaimed)
+	p.onRecv = js.FuncOf(func(this js.Value, args []js.Value) any {
+		data := args[0].Get("data")
+		if data.Type() == js.TypeObject &&
+			data.Get(remoteImportControlKey).String() == remoteImportControlClose {
+			_ = p.Close()
+			return nil
+		}
+		data = js.Global().Get("Uint8Array").New(data)
 		buf := make([]byte, data.Length())
 		js.CopyBytesToGo(buf, data)
-		_, err := rbuf.Write(buf)
+		_, err := p.rbuf.Write(buf)
 		if err != nil {
 			log.Println("p9 port readwriter: rbuf.Write:", err)
 		}
 		return nil
 	})
-	port.Set("onmessage", onRecv)
-	return &P9PortReadWriter{
-		port:   port,
-		rbuf:   rbuf,
-		onRecv: onRecv,
-	}
+	port.Set("onmessage", p.onRecv)
+	port.Call("postMessage", map[string]any{
+		remoteImportControlKey: remoteImportControlAttached,
+	})
+	return p
 }
 
 func (p *P9PortReadWriter) Write(b []byte) (int, error) {
@@ -167,6 +201,9 @@ func (p *P9PortReadWriter) Write(b []byte) (int, error) {
 	}
 	p.mu.Lock()
 	defer p.mu.Unlock()
+	if p.closed {
+		return 0, io.ErrClosedPipe
+	}
 
 	p.wbuf = append(p.wbuf, b...)
 
@@ -195,8 +232,26 @@ func (p *P9PortReadWriter) Read(pb []byte) (int, error) {
 }
 
 func (p *P9PortReadWriter) Close() error {
-	_ = p.rbuf.Close()
-	p.onRecv.Release()
-	p.port.Set("onmessage", js.Undefined())
-	return nil
+	p.once.Do(func() {
+		p.mu.Lock()
+		p.closed = true
+		p.mu.Unlock()
+		p.err = p.rbuf.Close()
+		p.port.Call("postMessage", map[string]any{
+			remoteImportControlKey: remoteImportControlClosed,
+		})
+		p.port.Set("onmessage", js.Undefined())
+		releaseJSFuncLater(p.onRecv)
+	})
+	return p.err
+}
+
+func releaseJSFuncLater(fn js.Func) {
+	var release js.Func
+	release = js.FuncOf(func(this js.Value, args []js.Value) any {
+		fn.Release()
+		release.Release()
+		return nil
+	})
+	js.Global().Call("setTimeout", release, 0)
 }

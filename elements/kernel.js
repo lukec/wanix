@@ -42,6 +42,10 @@ export class WanixKernel {
         throw new Error("wasm not ready");
     }
 
+    setupNamespace(tid = "", baseFS = "", bindings = []) {
+        return this._setupNamespace(tid, baseFS, bindings);
+    }
+
     // no tid means the root task
     openHandle(tid) {
         return new WanixHandle(this._openPort(tid));

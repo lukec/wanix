@@ -9,6 +9,7 @@ import (
 	"errors"
 	"io"
 	"net"
+	"sync"
 	"time"
 
 	"tractor.dev/toolkit-go/engine/cli"
@@ -18,16 +19,14 @@ import (
 
 // FakeConn adapts an io.ReadWriteCloser to a net.Conn (minimal implementation).
 type FakeConn struct {
-	rwc    io.ReadWriteCloser
-	closed chan struct{}
+	rwc  io.ReadWriteCloser
+	once sync.Once
+	err  error
 }
 
 // NewFakeConn wraps an io.ReadWriteCloser as a net.Conn.
 func NewFakeConn(rwc io.ReadWriteCloser) net.Conn {
-	return &FakeConn{
-		rwc:    rwc,
-		closed: make(chan struct{}),
-	}
+	return &FakeConn{rwc: rwc}
 }
 
 func (c *FakeConn) Read(b []byte) (int, error) {
@@ -39,13 +38,10 @@ func (c *FakeConn) Write(b []byte) (int, error) {
 }
 
 func (c *FakeConn) Close() error {
-	select {
-	case <-c.closed:
-		return nil
-	default:
-		close(c.closed)
-		return c.rwc.Close()
-	}
+	c.once.Do(func() {
+		c.err = c.rwc.Close()
+	})
+	return c.err
 }
 
 func (c *FakeConn) LocalAddr() net.Addr {

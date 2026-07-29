@@ -118,6 +118,34 @@ Mount a source into the namespace at `dst`.
 | `archive` | Fetch a `.tar` or `.tar.gz` and mount as a directory tree. |
 | `import` | Import a remote Wanix namespace via WebSocket (`ws://` / `wss://`) or iframe + 9P (`src` URL with `#system-id`). |
 
+WebSocket imports expose an explicit lifecycle. `opened` resolves when the
+transport port is ready, `closed` resolves after both the WebSocket and Wanix
+port reader have closed, and `close()` starts an idempotent close:
+
+```js
+const task = document.querySelector("wanix-task");
+const binding = document.createElement("wanix-bind");
+binding.setAttribute("type", "import");
+binding.setAttribute("dst", "remote");
+binding.setAttribute("src", "wss://example.test/9p");
+task.append(binding);
+
+await task.setupNamespace([binding]);
+await task.taskRoot.bind("remote/subdirectory", "workspace");
+
+// Remove every derived binding before closing the shared transport.
+await task.taskRoot.unbind("workspace", "workspace");
+await task.taskRoot.unbind("remote", "remote");
+await binding.close();
+```
+
+For WebSocket imports, connection failure or an explicit lifecycle close during
+the 9P handshake rejects `setupNamespace()` instead of leaving it pending.
+A connected but nonresponding transport can still leave protocol work pending,
+so callers should retain the binding and apply their own timeout followed by
+`close()`. Iframe import behavior is unchanged and does not expose this managed
+WebSocket lifecycle.
+
 ### `<wanix-task>`
 
 Allocate and run a task, which is shaped like a process (args, env, stdio, ...) and executed by

@@ -210,13 +210,6 @@ func main() {
 	}))
 
 	el.Set("_setupNamespace", js.FuncOf(func(this js.Value, args []js.Value) any {
-		taskID := args[0].String()
-		baseFS := args[1].String()
-		bindings := jsutil.ToSlice(args[2])
-		task, err := root.Lookup(taskID)
-		if err != nil {
-			log.Fatal(err)
-		}
 		var resolve, reject js.Value
 		promise := js.Global().Get("Promise").New(js.FuncOf(func(this js.Value, args []js.Value) any {
 			resolve = args[0]
@@ -226,9 +219,21 @@ func main() {
 		go func() {
 			defer func() {
 				if r := recover(); r != nil {
-					reject.Invoke(js.ValueOf(r))
+					reject.Invoke(fmt.Sprintf("setting up namespace: %v", r))
 				}
 			}()
+			if len(args) != 3 {
+				reject.Invoke(fmt.Sprintf("setting up namespace: got %d arguments, want 3", len(args)))
+				return
+			}
+			taskID := args[0].String()
+			baseFS := args[1].String()
+			bindings := jsutil.ToSlice(args[2])
+			task, err := root.Lookup(taskID)
+			if err != nil {
+				reject.Invoke(fmt.Sprintf("looking up task %q: %v", taskID, err))
+				return
+			}
 			if taskID != "1" { // leave root namespace alone
 				_ = baseFS
 				// if err := task.NS().UnbindAll(); err != nil {
@@ -272,7 +277,8 @@ func main() {
 					modeStr := binding.Get("perm").String()
 					m, err := strconv.ParseInt(modeStr, 8, 32)
 					if err != nil {
-						log.Fatalf("invalid file permission %q: %v", modeStr, err)
+						reject.Invoke(fmt.Sprintf("invalid file permission %q: %v", modeStr, err))
+						return
 					}
 					perm = fs.FileMode(m)
 				}
@@ -281,89 +287,94 @@ func main() {
 				case typ == "archive":
 					v, err := jsutil.AwaitErr(binding.Get("data"))
 					if err != nil {
-						log.Println("error fetching archive", err)
+						reject.Invoke(fmt.Sprintf("fetching archive: %v", err))
 						return
 					}
 					archiveFS, err := tarfs.From(tar.NewReader(jsutil.NewReadableStream(v)))
 					if err != nil {
-						log.Println("error creating archive filesystem", err)
+						reject.Invoke(fmt.Sprintf("creating archive filesystem: %v", err))
 						return
 					}
 					rwfs := memfs.New()
 					// t := time.Now()
 					if err := fs.CopyFS(archiveFS, ".", rwfs, "."); err != nil {
-						log.Println("error copying archive to memory filesystem", err)
+						reject.Invoke(fmt.Sprintf("copying archive to memory filesystem: %v", err))
 						return
 					}
 					// log.Println("copied archive to memory filesystem in", time.Since(t))
 					if err := task.NS().Bind(rwfs, ".", dst); err != nil {
-						log.Println("error binding archive", err)
+						reject.Invoke(fmt.Sprintf("binding archive at %q: %v", dst, err))
 						return
 					}
 				case typ == "fetch" || (typ == "file" && src != ""):
 					v, err := jsutil.AwaitErr(binding.Get("data"))
 					if err != nil {
-						log.Println("error fetching", err)
+						reject.Invoke(fmt.Sprintf("fetching %q: %v", src, err))
 						return
 					}
 					buf, err := io.ReadAll(jsutil.NewReadableStream(v))
 					if err != nil {
-						log.Println("error reading fetch", err)
+						reject.Invoke(fmt.Sprintf("reading fetch %q: %v", src, err))
 						return
 					}
 					filefs := memfs.New()
 					if err := fs.WriteFile(filefs, path.Base(dst), buf, perm); err != nil {
-						log.Println("error writing fetch", err)
+						reject.Invoke(fmt.Sprintf("writing fetched file %q: %v", dst, err))
 						return
 					}
 					if err := task.NS().Bind(filefs, path.Base(dst), dst); err != nil {
-						log.Println("error binding fetch", err)
+						reject.Invoke(fmt.Sprintf("binding fetched file at %q: %v", dst, err))
 						return
 					}
 				case typ == "file" && src == "":
 					v, err := jsutil.AwaitErr(binding.Get("data"))
 					if err != nil {
-						log.Println("error fetching", err)
+						reject.Invoke(fmt.Sprintf("reading inline file %q: %v", dst, err))
 						return
 					}
 					buf, err := io.ReadAll(jsutil.NewReadableStream(v))
 					if err != nil {
-						log.Println("error reading fetch", err)
+						reject.Invoke(fmt.Sprintf("reading inline file %q: %v", dst, err))
 						return
 					}
 					if err := fs.WriteFile(task.NS(), dst, buf, perm); err != nil {
-						log.Fatalf("error writing file %s: %v", dst, err)
+						reject.Invoke(fmt.Sprintf("writing inline file %q: %v", dst, err))
+						return
 					}
 					// TODO: FIX this, why do we have to chmod here? we set mode in writefile!
 					if err := fs.Chmod(task.NS(), dst, perm); err != nil {
-						log.Println("error chmodding fetch", err)
+						reject.Invoke(fmt.Sprintf("setting mode on inline file %q: %v", dst, err))
 						return
 					}
 				case typ == "ns":
 					// jsutil.Log("binding ns", src, dst, task.ID())
 					if err := task.Bind(src, dst, opts...); err != nil {
-						log.Fatal(err)
+						reject.Invoke(fmt.Sprintf("binding namespace %q at %q: %v", src, dst, err))
+						return
 					}
 				case typ == "import":
 					t := time.Now()
 					v, err := jsutil.AwaitErr(binding.Get("import"))
 					if err != nil {
-						log.Println("error importing", err)
+						reject.Invoke(fmt.Sprintf("opening remote import %q: %v", dst, err))
 						return
 					}
 					conn := misc.NewFakeConn(NewP9PortReadWriter(v))
 					fsys, err := p9kit.ClientFS(conn, "")
 					if err != nil {
-						log.Println("error creating client for import", err)
+						_ = conn.Close()
+						reject.Invoke(fmt.Sprintf("creating client for remote import %q: %v", dst, err))
 						return
 					}
 					if err := task.NS().Bind(fsys, ".", dst); err != nil {
-						log.Println("error binding import", err)
+						_ = conn.Close()
+						reject.Invoke(fmt.Sprintf("binding remote import at %q: %v", dst, err))
 						return
 					}
 					log.Println("imported in", time.Since(t))
 				default:
-					reject.Invoke(fmt.Errorf("unknown binding type %q", typ))
+					reject.Invoke(fmt.Sprintf("unknown binding type %q", typ))
+					return
 				}
 			}
 			resolve.Invoke(js.Undefined())

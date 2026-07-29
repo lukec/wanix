@@ -2,6 +2,7 @@ export { TerminalElement } from "./term.js";
 export { NamespaceElement } from "./namespace.js";
 export { WorkbenchElement } from "./workbench.js";
 export { BindElement } from "./bind.js";
+export { RemoteNamespaceImport } from "./remote-import.js";
 export { TaskElement } from "./task.js";
 export { VMElement } from "./vm.js";
 export { WanixKernel } from "./kernel.js";
