@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Wanix Flash Lab</title>
-  <meta name="description" content="Learn Wanix by compiling and flashing a complete ESP8266 application from one browser tab.">
+  <meta name="description" content="Learn Wanix by compiling and flashing a complete ESP8266 application locally inside one browser tab—without a build server.">
   <link rel="stylesheet" href="./style.css">
   <script type="module" src="./vendor/wanix.min.js"></script>
   <script type="module" src="https://unpkg.com/esp-web-tools@10/dist/web/install-button.js?module"></script>
@@ -16,13 +16,13 @@
       <div>
         <p class="kit-label">WANIX FIELD KIT · LAB 01 · ESP8266</p>
         <h1>Wanix Flash Lab</h1>
-        <p class="hero-copy">Build a complete microcontroller application inside a Linux machine that exists inside this browser tab—then carry it across USB into the physical world.</p>
+        <p class="hero-copy">Build a complete microcontroller application inside a Linux machine that exists inside this browser tab—then carry it across USB into the physical world. There is no application backend or remote build service: the host serves only static files, while your source, Linux VM, compiler job and firmware all stay inside your browser.</p>
       </div>
       <aside class="location-card" aria-live="polite">
         <div class="location-heading"><span class="live-dot"></span> WHERE IS THIS RUNNING?</div>
         <strong id="runtime-location">Browser host</strong>
         <span id="runtime-detail">Wanix is composing a filesystem.</span>
-        <span class="local-pill">LOCAL · NO BUILD SERVER</span>
+        <span class="local-pill">NO BACKEND · BROWSER-LOCAL BUILD</span>
       </aside>
     </header>
 
@@ -32,7 +32,7 @@
       <div class="lesson-heading">
         <p class="kicker">THE BIG IDEA</p>
         <h2 id="intro-title">One tab. Three computers.</h2>
-        <p>Wanix is the connective tissue. It gives a web page Unix-like namespaces, files, tasks, terminals and virtual machines, so existing command-line tools can become parts of a local-first web application.</p>
+        <p>Wanix is the connective tissue. It gives a web page Unix-like namespaces, files, tasks, terminals and virtual machines, so existing command-line tools can become parts of a local-first web application. The web host only delivers static assets; every active step runs on this device.</p>
       </div>
 
       <div class="machine-flow" aria-label="Browser to Linux to ESP8266 architecture">
@@ -86,7 +86,7 @@ ESP8266 target   physical Xtensa microcontroller</code></pre>
             <li><strong>v86</strong> emulates an x86 PC capable of booting Alpine Linux. Inside it, ordinary command-line tools cross-compile for a completely different CPU.</li>
             <li><strong>The ESP8266</strong> never runs Wanix or Linux. It receives the final flash image and boots that native firmware.</li>
           </ul>
-          <div class="wanix-idea"><strong>WANIX IDEA</strong><p>Wanix gives the browser Unix-shaped ways to connect these components: mounted resources, paths, tasks and byte streams. After the static assets load, no build server sits between them.</p></div>
+          <div class="wanix-idea"><strong>WANIX IDEA</strong><p>Wanix gives the browser Unix-shaped ways to connect these components: mounted resources, paths, tasks and byte streams. The network only fetches static HTML, JavaScript, WebAssembly and toolchain archives; it never receives your generated source, shell commands, compiler output or firmware.</p></div>
         </div>
       </article>
     </section>
@@ -222,7 +222,7 @@ digitalWrite(LED_BUILTIN, HIGH); // LED off</code></pre>
         <div class="lesson-heading">
           <p class="kicker">CROSS THE VM BOUNDARY</p>
           <h2 id="build-title">Drive Linux through a Wanix terminal.</h2>
-          <p>JavaScript writes the source into the shared namespace, opens the VM terminal as a file, sends one shell command and watches for the result to appear back in the tree.</p>
+          <p>No build request is sent to a server. JavaScript writes the source into the shared namespace, opens the VM terminal as a file, sends one shell command and watches for the result to appear back in the tree.</p>
         </div>
 
         <div class="build-pipeline" aria-label="Firmware build stages">
@@ -269,7 +269,7 @@ BUILD_ID=build-… APP_SOURCE=/workspace/main.cpp \
         <div class="lesson-heading">
           <p class="kicker">RETURN TO THE BROWSER</p>
           <h2 id="artifact-title">The output becomes another file.</h2>
-          <p>The guest writes <code>firmware.bin</code> into the shared workspace. Wanix lets browser JavaScript read it directly—there is no upload or API response.</p>
+          <p>The guest writes <code>firmware.bin</code> into the shared workspace. Wanix lets browser JavaScript read it directly: nothing is uploaded, and no application server sees the source, compiler transcript or firmware.</p>
         </div>
 
         <div class="artifact-grid">
@@ -456,8 +456,8 @@ term.setAttribute("scrollback", "2000");</code></pre>
     </main>
 
     <footer>
-      <p><strong>What Wanix contributed:</strong> the namespace, browser-backed files, VM device, terminal-as-file and the path that returns a Linux-built artifact to JavaScript.</p>
-      <p class="footer-note">The Arduino core is packaged as a precompiled library, like a standard library. Your <code>main.cpp</code>, ELF and complete flashable application are rebuilt for every run. <a href="https://github.com/lukec/wanix/tree/codex/spike-personal-firmware/spikes/personal-firmware">VIEW SOURCE</a> · <a href="https://wanix.sh/">LEARN ABOUT WANIX</a></p>
+      <p><strong>No backend did the work:</strong> Wanix supplied the namespace, browser-backed files, VM device, terminal-as-file and the path that returns the Linux-built artifact to JavaScript—all inside this tab.</p>
+      <p class="footer-note">Static host only · no build API · no source or firmware upload. The Arduino core is packaged as a precompiled library, like a standard library. Your <code>main.cpp</code>, ELF and complete flashable application are rebuilt for every run. <a href="https://github.com/lukec/wanix/tree/codex/spike-personal-firmware/spikes/personal-firmware">VIEW SOURCE</a> · <a href="https://wanix.sh/">LEARN ABOUT WANIX</a></p>
     </footer>
   </div>
 

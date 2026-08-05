@@ -2,7 +2,9 @@
 
 Wanix Flash Lab is an explorable Wanix lesson that builds a complete ESP8266 application inside the browser and prepares it for Web Serial installation on a Wemos D1 mini Pro.
 
-A visitor changes a name and the built-in LED's flash rate. Browser JavaScript generates `main.cpp`; Wanix boots an Alpine Linux guest in v86; the guest compiles and links the application with the real 32-bit Xtensa toolchain; and the resulting `firmware.bin` returns through the Wanix filesystem. No source or build artifact is sent to a server.
+A visitor changes a name and the built-in LED's flash rate. Browser JavaScript generates `main.cpp`; Wanix boots an Alpine Linux guest in v86; the guest compiles and links the application with the real 32-bit Xtensa toolchain; and the resulting `firmware.bin` returns through the Wanix filesystem.
+
+The web host serves static HTML, JavaScript, WebAssembly and toolchain archives. There is no application backend, build API, remote container or server-side compiler. Generated source, shell commands, compiler output and firmware never leave the visitor's browser.
 
 The page is deliberately about Wanix rather than browser flashing in general. It makes these ideas visible:
 
