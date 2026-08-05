@@ -163,10 +163,147 @@ main { display: grid; gap: 20px; }
   text-align: center;
 }
 
+.how-button {
+  position: absolute;
+  z-index: 1;
+  top: 12px;
+  right: 82px;
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  min-height: 34px;
+  padding: 0 11px;
+  border: 2px solid var(--ink);
+  border-radius: 8px;
+  background: #fffaf1;
+  color: var(--ink);
+  box-shadow: 2px 2px 0 var(--ink);
+  cursor: pointer;
+  font: 850 0.68rem/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.how-button span { color: var(--red-dark); font-size: 1rem; line-height: 0; }
+.how-button:hover { transform: translate(-1px, -1px); box-shadow: 3px 3px 0 var(--ink); }
+.how-button:active { transform: translate(1px, 1px); box-shadow: 1px 1px 0 var(--ink); }
+.how-button:focus-visible, .how-close:focus-visible { outline: 4px solid var(--blue); outline-offset: 3px; }
+
+.how-popover {
+  inset: 0;
+  width: min(740px, calc(100% - 28px));
+  max-height: min(82vh, 760px);
+  margin: auto;
+  padding: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+  border: 3px solid var(--ink);
+  border-radius: 18px;
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow: 10px 12px 0 var(--ink);
+}
+
+.how-popover::backdrop {
+  background: rgba(16, 23, 21, 0.66);
+  backdrop-filter: blur(2px);
+}
+
+.how-popover-bar {
+  position: sticky;
+  z-index: 1;
+  top: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  min-height: 49px;
+  padding-left: 18px;
+  border-bottom: 2px solid var(--ink);
+  background: var(--yellow);
+  font: 900 0.72rem/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+  letter-spacing: 0.08em;
+}
+
+.how-close {
+  align-self: stretch;
+  width: 50px;
+  border: 0;
+  border-left: 2px solid var(--ink);
+  background: var(--red);
+  color: var(--ink);
+  cursor: pointer;
+  font: 800 1.65rem/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.how-close:hover { background: #f77b69; }
+
+.how-popover-body { padding: 28px 30px 30px; }
+
+.how-kicker {
+  margin-bottom: 9px;
+  color: var(--red-dark);
+  font: 900 0.69rem/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+  letter-spacing: 0.09em;
+}
+
+.how-popover h3 {
+  max-width: 610px;
+  margin-bottom: 13px;
+  font-size: clamp(1.65rem, 4vw, 2.45rem);
+  line-height: 1.03;
+  letter-spacing: -0.035em;
+}
+
+.how-popover h4 {
+  margin: 24px 0 9px;
+  font-size: 0.82rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.how-lede { color: #4e504b; font-size: 1rem; line-height: 1.6; }
+
+.how-popover pre {
+  margin: 21px 0;
+  padding: 17px 18px;
+  overflow: auto;
+  border: 2px solid var(--ink);
+  border-radius: 11px;
+  background: var(--panel);
+  color: #dff3e6;
+  font: 0.76rem/1.65 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+.how-popover ul, .how-popover ol { margin: 13px 0 22px; padding-left: 24px; }
+.how-popover li { margin-bottom: 9px; color: #424540; line-height: 1.55; }
+.how-popover li::marker { color: var(--red-dark); font-weight: 900; }
+.how-popover code { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
+.how-popover p code, .how-popover li code { padding: 1px 4px; border-radius: 4px; background: var(--paper-deep); font-size: 0.88em; }
+
+.wanix-idea {
+  position: relative;
+  margin-top: 24px;
+  padding: 17px 18px 16px 116px;
+  border: 2px solid var(--ink);
+  border-left: 10px solid var(--blue);
+  border-radius: 11px;
+  background: #e9f5fb;
+}
+
+.wanix-idea strong {
+  position: absolute;
+  top: 18px;
+  left: 15px;
+  font: 900 0.68rem/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+  letter-spacing: 0.06em;
+}
+
+.wanix-idea p { margin: 0; color: #35434a; font-size: 0.86rem; line-height: 1.5; }
+
 .lesson-heading {
   max-width: 830px;
   margin-bottom: 28px;
-  padding-right: 54px;
+  padding-right: 180px;
 }
 
 .lesson-heading > p:last-child {
@@ -803,7 +940,14 @@ wanix-namespace { display: none; }
   h1 { font-size: clamp(3.4rem, 19vw, 5rem); }
   .lesson { padding: 26px 19px; border-radius: 17px; box-shadow: 4px 5px 0 rgba(23,26,24,0.95); }
   .lesson-number { min-width: 54px; padding: 10px 12px; font-size: 1rem; }
-  .lesson-heading { padding-right: 42px; }
+  .how-button { top: 9px; right: 65px; min-height: 31px; padding: 0 8px; font-size: 0.6rem; }
+  .lesson-heading { padding-top: 36px; padding-right: 0; }
+  .how-popover { width: calc(100% - 18px); max-height: calc(100dvh - 18px); border-radius: 13px; box-shadow: 5px 6px 0 var(--ink); }
+  .how-popover-bar { min-height: 45px; padding-left: 13px; font-size: 0.64rem; }
+  .how-close { width: 45px; }
+  .how-popover-body { padding: 22px 18px 23px; }
+  .how-popover pre { margin: 17px 0; padding: 13px; font-size: 0.68rem; }
+  .wanix-idea { padding: 48px 14px 15px; }
   .build-pipeline { grid-template-columns: 1fr; gap: 7px; }
   .pipeline-arrow { transform: rotate(90deg); font-size: 1rem; }
   .artifact-grid { grid-template-columns: 1fr; }

@@ -28,6 +28,7 @@
 
     <section class="lesson intro" aria-labelledby="intro-title">
       <div class="lesson-number">00</div>
+      <button class="how-button" type="button" popovertarget="how-00">How this works <span aria-hidden="true">+</span></button>
       <div class="lesson-heading">
         <p class="kicker">THE BIG IDEA</p>
         <h2 id="intro-title">One tab. Three computers.</h2>
@@ -62,11 +63,38 @@
           <code>80 MHz · 16 MiB flash</code>
         </article>
       </div>
+
+      <article id="how-00" class="how-popover" popover role="dialog" aria-labelledby="how-00-title">
+        <div class="how-popover-bar">
+          <span>DEEP DIVE · STEP 00</span>
+          <button class="how-close" type="button" popovertarget="how-00" popovertargetaction="hide" aria-label="Close technical explanation">×</button>
+        </div>
+        <div class="how-popover-body">
+          <p class="how-kicker">THE RUNTIME MAP</p>
+          <h3 id="how-00-title">The three computers are genuinely different machines.</h3>
+          <p class="how-lede">The page coordinates three instruction sets and two hard boundaries. “Local” does not mean everything runs in one JavaScript process.</p>
+          <pre class="how-flow" aria-label="Browser to Linux guest to ESP8266 flow"><code>Browser host     JavaScript + Wanix WebAssembly
+       │          files and terminal bytes
+       ▼
+v86 guest        x86 Linux + Xtensa cross-compiler
+       │          firmware.bin over Web Serial
+       ▼
+ESP8266 target   physical Xtensa microcontroller</code></pre>
+          <h4>What each machine contributes</h4>
+          <ul>
+            <li><strong>The browser</strong> owns the page, Wanix namespace, generated source, artifact bytes and permission-gated USB connection.</li>
+            <li><strong>v86</strong> emulates an x86 PC capable of booting Alpine Linux. Inside it, ordinary command-line tools cross-compile for a completely different CPU.</li>
+            <li><strong>The ESP8266</strong> never runs Wanix or Linux. It receives the final flash image and boots that native firmware.</li>
+          </ul>
+          <div class="wanix-idea"><strong>WANIX IDEA</strong><p>Wanix gives the browser Unix-shaped ways to connect these components: mounted resources, paths, tasks and byte streams. After the static assets load, no build server sits between them.</p></div>
+        </div>
+      </article>
     </section>
 
     <main>
       <section class="lesson namespace-lesson" aria-labelledby="namespace-title">
         <div class="lesson-number">01</div>
+        <button class="how-button" type="button" popovertarget="how-01">How this works <span aria-hidden="true">+</span></button>
         <div class="lesson-heading">
           <p class="kicker">COMPOSE THE COMPUTER</p>
           <h2 id="namespace-title">Wanix turns resources into one tree.</h2>
@@ -106,10 +134,34 @@
             </details>
           </div>
         </div>
+
+        <article id="how-01" class="how-popover" popover role="dialog" aria-labelledby="how-01-title">
+          <div class="how-popover-bar">
+            <span>DEEP DIVE · STEP 01</span>
+            <button class="how-close" type="button" popovertarget="how-01" popovertargetaction="hide" aria-label="Close technical explanation">×</button>
+          </div>
+          <div class="how-popover-body">
+            <p class="how-kicker">NAMESPACE COMPOSITION</p>
+            <h3 id="how-01-title">The filesystem is assembled, not downloaded as one disk.</h3>
+            <p class="how-lede"><code>&lt;wanix-namespace&gt;</code> creates a private root. Each child bind places a resource provider at a destination path, so unrelated implementations appear as one coherent tree.</p>
+            <pre><code>&lt;wanix-bind dst="." type="archive" src="wanix-linux.tgz"&gt;
+&lt;wanix-bind dst="workspace" src="#ramfs/new"&gt;
+&lt;wanix-bind dst="vm" src="#vm"&gt;
+&lt;wanix-vm export="ttyS0" mem="256M" term start&gt;</code></pre>
+            <ol>
+              <li>The Linux and ESP8266 toolchain archives populate normal-looking paths such as <code>/opt/xtensa-lx106</code>.</li>
+              <li><code>#ramfs/new</code> supplies a browser-memory filesystem at <code>/workspace</code>. JavaScript and the guest both see its files.</li>
+              <li><code>#vm</code> supplies the virtual-machine device. The v86 archive adds its driver, and <code>&lt;wanix-vm&gt;</code> boots the guest.</li>
+              <li>The page waits for the guest’s <code>#task</code> path before enabling Build. Files appearing in the tree are the readiness signal.</li>
+            </ol>
+            <div class="wanix-idea"><strong>WANIX IDEA</strong><p>A path describes where a capability appears, not where its bytes physically live. HTTP archives, RAM and a device can all participate in the same namespace.</p></div>
+          </div>
+        </article>
       </section>
 
       <section class="lesson source-lesson" aria-labelledby="source-title">
         <div class="lesson-number">02</div>
+        <button class="how-button" type="button" popovertarget="how-02">How this works <span aria-hidden="true">+</span></button>
         <div class="lesson-heading">
           <p class="kicker">MAKE IT YOURS</p>
           <h2 id="source-title">Change what the hardware does.</h2>
@@ -138,10 +190,35 @@
             <pre><code id="source-preview"></code></pre>
           </div>
         </div>
+
+        <article id="how-02" class="how-popover" popover role="dialog" aria-labelledby="how-02-title">
+          <div class="how-popover-bar">
+            <span>DEEP DIVE · STEP 02</span>
+            <button class="how-close" type="button" popovertarget="how-02" popovertargetaction="hide" aria-label="Close technical explanation">×</button>
+          </div>
+          <div class="how-popover-body">
+            <p class="how-kicker">SOURCE GENERATION</p>
+            <h3 id="how-02-title">The controls generate a complete C++ translation unit.</h3>
+            <p class="how-lede">Every input event calls <code>firmwareSource(owner, cycleMs)</code>. The source panel is therefore a preview of the exact text that will become <code>/workspace/main.cpp</code>.</p>
+            <pre><code>constexpr char kOwner[] = "Luke";
+constexpr uint32_t kBlinkHalfPeriodMs = 500;
+
+digitalWrite(LED_BUILTIN, LOW);  // LED on
+delay(kBlinkHalfPeriodMs);
+digitalWrite(LED_BUILTIN, HIGH); // LED off</code></pre>
+            <ul>
+              <li>The name is checked as UTF-8 and limited to 64 bytes, then encoded as a safe C++ string literal.</li>
+              <li>The selected full blink cycle is divided into equal ON and OFF delays. The D1 mini’s built-in LED is active-low, so <code>LOW</code> turns it on.</li>
+              <li>The Arduino core and SDK libraries are precompiled dependencies. This page still compiles the newly generated <code>main.cpp</code>, then links a new ELF and packages a new flash image.</li>
+            </ul>
+            <div class="wanix-idea"><strong>WANIX IDEA</strong><p>The UI is a source-code authoring tool. Personalization is not patched into a prebuilt firmware blob; it crosses the browser/guest boundary as an ordinary file.</p></div>
+          </div>
+        </article>
       </section>
 
       <section class="lesson build-lesson" aria-labelledby="build-title">
         <div class="lesson-number">03</div>
+        <button class="how-button" type="button" popovertarget="how-03">How this works <span aria-hidden="true">+</span></button>
         <div class="lesson-heading">
           <p class="kicker">CROSS THE VM BOUNDARY</p>
           <h2 id="build-title">Drive Linux through a Wanix terminal.</h2>
@@ -160,10 +237,35 @@
           <div class="panel-bar"><span>LINUX GUEST TERMINAL</span><span id="elapsed">waiting for builder</span></div>
           <div id="terminal" class="terminal" aria-label="Build output"></div>
         </div>
+
+        <article id="how-03" class="how-popover" popover role="dialog" aria-labelledby="how-03-title">
+          <div class="how-popover-bar">
+            <span>DEEP DIVE · STEP 03</span>
+            <button class="how-close" type="button" popovertarget="how-03" popovertargetaction="hide" aria-label="Close technical explanation">×</button>
+          </div>
+          <div class="how-popover-body">
+            <p class="how-kicker">TERMINAL-DRIVEN BUILD</p>
+            <h3 id="how-03-title">There is no special build RPC.</h3>
+            <p class="how-lede">JavaScript treats the VM terminal as a duplex file. It writes a shell command to the same byte stream from which it reads compiler output.</p>
+            <pre><code>const out = await root.openReadable(`${vm.term}/data`);
+const input = await root.openWritable(`${vm.term}/data`);
+
+BUILD_ID=build-… APP_SOURCE=/workspace/main.cpp \
+  /bin/sh /workspace/build.sh</code></pre>
+            <ol>
+              <li>The controller first writes <code>workspace/main.cpp</code> through the Wanix root API.</li>
+              <li>The shell script compiles it with <code>xtensa-lx106-elf-g++</code>, links it with the packaged Arduino core and SDK, then runs <code>wanix-elf2bin</code>.</li>
+              <li>Compiler scratch files live in a guest <code>/tmp</code> tmpfs; only useful outputs cross back into the shared workspace.</li>
+              <li>A unique marker printed after the command carries its exit status. The page recognizes that marker in the terminal stream and then reads <code>result.json</code>.</li>
+            </ol>
+            <div class="wanix-idea"><strong>WANIX IDEA</strong><p>Automation and a person can drive the same real shell interface. The application composes familiar files and commands instead of requiring a custom guest API.</p></div>
+          </div>
+        </article>
       </section>
 
       <section class="lesson artifact-lesson" aria-labelledby="artifact-title">
         <div class="lesson-number">04</div>
+        <button class="how-button" type="button" popovertarget="how-04">How this works <span aria-hidden="true">+</span></button>
         <div class="lesson-heading">
           <p class="kicker">RETURN TO THE BROWSER</p>
           <h2 id="artifact-title">The output becomes another file.</h2>
@@ -197,10 +299,34 @@
             <p id="artifact-summary">No artifact yet. The entire application will be written from offset zero.</p>
           </div>
         </div>
+
+        <article id="how-04" class="how-popover" popover role="dialog" aria-labelledby="how-04-title">
+          <div class="how-popover-bar">
+            <span>DEEP DIVE · STEP 04</span>
+            <button class="how-close" type="button" popovertarget="how-04" popovertargetaction="hide" aria-label="Close technical explanation">×</button>
+          </div>
+          <div class="how-popover-body">
+            <p class="how-kicker">ARTIFACT HANDOFF</p>
+            <h3 id="how-04-title">The output crosses back through the namespace.</h3>
+            <p class="how-lede">The guest copies its result files into a unique directory below <code>/workspace/artifacts</code>. Because that path is backed by Wanix RAM, browser JavaScript can immediately consume the same bytes.</p>
+            <pre><code>await root.waitFor("workspace/artifacts/build-…/result.json");
+const firmware = await root.readFile("…/firmware.bin");
+const digest = await crypto.subtle.digest("SHA-256", firmware);
+const url = URL.createObjectURL(new Blob([firmware]));</code></pre>
+            <ul>
+              <li><code>result.json</code> carries build status, elapsed guest time and exact source, ELF and firmware byte counts.</li>
+              <li><code>readFile</code> returns the binary firmware to JavaScript as bytes—not base64 and not an HTTP response.</li>
+              <li>WebCrypto computes the content identity. Blob URLs then expose those in-memory bytes to the download link and flashing component.</li>
+              <li>The ELF is the linked executable used to create the image; <code>firmware.bin</code> is the ESP8266 flash layout that starts at offset zero.</li>
+            </ul>
+            <div class="wanix-idea"><strong>WANIX IDEA</strong><p>The build result is not returned by a service call. Producer and consumer agree on paths, so a Linux process and a web component can exchange artifacts through files.</p></div>
+          </div>
+        </article>
       </section>
 
       <section class="lesson shell-lesson" aria-labelledby="shell-title">
         <div class="lesson-number">05</div>
+        <button class="how-button" type="button" popovertarget="how-05">How this works <span aria-hidden="true">+</span></button>
         <div class="lesson-heading">
           <p class="kicker">OPEN THE MACHINE</p>
           <h2 id="shell-title">Don’t take our word for it. Look around.</h2>
@@ -237,10 +363,35 @@
             </div>
           </div>
         </div>
+
+        <article id="how-05" class="how-popover" popover role="dialog" aria-labelledby="how-05-title">
+          <div class="how-popover-bar">
+            <span>DEEP DIVE · STEP 05</span>
+            <button class="how-close" type="button" popovertarget="how-05" popovertargetaction="hide" aria-label="Close technical explanation">×</button>
+          </div>
+          <div class="how-popover-body">
+            <p class="how-kicker">A TERMINAL AS A FILE</p>
+            <h3 id="how-05-title">The interactive shell and build controller share one endpoint.</h3>
+            <p class="how-lede"><code>&lt;wanix-term&gt;</code> is an xterm UI attached to the VM’s terminal path. It does not imitate a shell; keyboard bytes go to Linux and terminal bytes come back.</p>
+            <pre><code>const term = document.createElement("wanix-term");
+term.setAttribute("for", "linux");
+term.setAttribute("path", vm.term);
+term.setAttribute("raw", "");
+term.setAttribute("scrollback", "2000");</code></pre>
+            <ol>
+              <li>The VM exports its serial console as a terminal device. Its data endpoint appears at <code>#term/…/data</code>.</li>
+              <li>When you open the shell, the custom element opens that endpoint and renders the stream with xterm.</li>
+              <li>The terminal has one owner at a time. Starting a build removes the interactive element before automation opens the stream; afterwards you can attach again.</li>
+              <li>Detaching the UI does not stop v86. The guest, shell history and files continue to live in browser memory until the page reloads.</li>
+            </ol>
+            <div class="wanix-idea"><strong>WANIX IDEA</strong><p>A terminal is another namespaced resource. The same endpoint supports a polished web interface, scripted control and direct human inspection without inventing three different backends.</p></div>
+          </div>
+        </article>
       </section>
 
       <section class="lesson flash-lesson" aria-labelledby="flash-title">
         <div class="lesson-number">06</div>
+        <button class="how-button" type="button" popovertarget="how-06">How this works <span aria-hidden="true">+</span></button>
         <div class="lesson-heading">
           <p class="kicker">ENTER THE PHYSICAL WORLD</p>
           <h2 id="flash-title">A human opens the USB door.</h2>
@@ -276,6 +427,31 @@
             <pre id="device-output" class="device-output" hidden></pre>
           </div>
         </div>
+
+        <article id="how-06" class="how-popover" popover role="dialog" aria-labelledby="how-06-title">
+          <div class="how-popover-bar">
+            <span>DEEP DIVE · STEP 06</span>
+            <button class="how-close" type="button" popovertarget="how-06" popovertargetaction="hide" aria-label="Close technical explanation">×</button>
+          </div>
+          <div class="how-popover-body">
+            <p class="how-kicker">THE HARDWARE BOUNDARY</p>
+            <h3 id="how-06-title">A manifest connects in-memory bytes to Web Serial.</h3>
+            <p class="how-lede">After a successful build, the page creates an ESP Web Tools manifest that identifies the target family and maps the firmware Blob URL onto flash address <code>0x000000</code>.</p>
+            <pre><code>{
+  "builds": [{
+    "chipFamily": "ESP8266",
+    "parts": [{ "path": "blob:…", "offset": 0 }]
+  }]
+}</code></pre>
+            <ol>
+              <li>Clicking the install button is the required human gesture that lets the browser show its serial-port chooser.</li>
+              <li>ESP Web Tools opens the selected USB serial adapter and speaks the ESP8266 ROM bootloader protocol.</li>
+              <li>The complete application image is written from offset zero; a new install may erase flash first. On reset, the ROM loads it and the LED begins the active-low blink loop you compiled.</li>
+              <li>Browser permission and USB are the only physical boundary. The source, compiler invocation and firmware bytes remain local; this site is only static files.</li>
+            </ol>
+            <div class="wanix-idea"><strong>WANIX IDEA</strong><p>Wanix gets an existing native toolchain to the artifact boundary. A browser-native component can then carry that artifact into hardware while preserving the browser’s explicit permission model.</p></div>
+          </div>
+        </article>
       </section>
     </main>
 
