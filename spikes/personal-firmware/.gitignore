@@ -1,0 +1,9 @@
+.native/
+.platformio/
+.pio/
+.esphome/
+.direct-build/
+build/
+artifacts/
+assets/
+vendor/

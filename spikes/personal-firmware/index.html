@@ -1,0 +1,307 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Wanix Flash Lab</title>
+  <meta name="description" content="Learn Wanix by compiling and flashing a complete ESP8266 application from one browser tab.">
+  <link rel="stylesheet" href="./style.css">
+  <script type="module" src="./vendor/wanix.min.js"></script>
+  <script type="module" src="https://unpkg.com/esp-web-tools@10/dist/web/install-button.js?module"></script>
+  <script type="module" src="./app.js"></script>
+</head>
+<body>
+  <div class="workbench">
+    <header class="hero">
+      <div>
+        <p class="kit-label">WANIX FIELD KIT · LAB 01 · ESP8266</p>
+        <h1>Wanix Flash Lab</h1>
+        <p class="hero-copy">Build a complete microcontroller application inside a Linux machine that exists inside this browser tab—then carry it across USB into the physical world.</p>
+      </div>
+      <aside class="location-card" aria-live="polite">
+        <div class="location-heading"><span class="live-dot"></span> WHERE IS THIS RUNNING?</div>
+        <strong id="runtime-location">Browser host</strong>
+        <span id="runtime-detail">Wanix is composing a filesystem.</span>
+        <span class="local-pill">LOCAL · NO BUILD SERVER</span>
+      </aside>
+    </header>
+
+    <section class="lesson intro" aria-labelledby="intro-title">
+      <div class="lesson-number">00</div>
+      <div class="lesson-heading">
+        <p class="kicker">THE BIG IDEA</p>
+        <h2 id="intro-title">One tab. Three computers.</h2>
+        <p>Wanix is the connective tissue. It gives a web page Unix-like namespaces, files, tasks, terminals and virtual machines, so existing command-line tools can become parts of a local-first web application.</p>
+      </div>
+
+      <div class="machine-flow" aria-label="Browser to Linux to ESP8266 architecture">
+        <article class="machine browser-machine">
+          <div class="module-lights"><i></i><i></i><i></i></div>
+          <span class="machine-index">1</span>
+          <p class="module-type">HOST</p>
+          <h3>Browser</h3>
+          <p>UI, JavaScript, Web Serial and the Wanix namespace.</p>
+          <code>window + WebAssembly</code>
+        </article>
+        <div class="cable red-blue"><span>files + terminal</span></div>
+        <article class="machine linux-machine">
+          <div class="module-lights"><i></i><i></i><i></i></div>
+          <span class="machine-index">2</span>
+          <p class="module-type">GUEST</p>
+          <h3>Linux</h3>
+          <p>Alpine in v86 runs the real 32-bit Xtensa toolchain.</p>
+          <code>gcc → ld → elf2bin</code>
+        </article>
+        <div class="cable blue-green"><span>firmware.bin</span></div>
+        <article class="machine esp-machine">
+          <div class="module-lights"><i></i><i></i><i></i></div>
+          <span class="machine-index">3</span>
+          <p class="module-type">TARGET</p>
+          <h3>ESP8266</h3>
+          <p>A Wemos D1 mini Pro runs the code and blinks its LED.</p>
+          <code>80 MHz · 16 MiB flash</code>
+        </article>
+      </div>
+    </section>
+
+    <main>
+      <section class="lesson namespace-lesson" aria-labelledby="namespace-title">
+        <div class="lesson-number">01</div>
+        <div class="lesson-heading">
+          <p class="kicker">COMPOSE THE COMPUTER</p>
+          <h2 id="namespace-title">Wanix turns resources into one tree.</h2>
+          <p>The page does not install a Linux machine in the usual sense. These binds layer remote archives, temporary browser memory and a VM device into one namespace.</p>
+        </div>
+
+        <div class="namespace-grid">
+          <div class="tree-panel dark-panel">
+            <div class="panel-bar"><span>WANIX NAMESPACE</span><span id="namespace-state">composing…</span></div>
+            <pre><span class="tree-root">/</span>
+├── <span class="tree-blue">opt/xtensa-lx106</span>   <em>compiler archive</em>
+├── <span class="tree-blue">opt/esp8266</span>         <em>Arduino SDK + core</em>
+├── <span class="tree-red">workspace</span>            <em>→ #ramfs/new</em>
+│   ├── main.cpp        <em>← browser writes</em>
+│   └── build.sh        <em>← HTTP file bind</em>
+└── <span class="tree-green">vm</span>                   <em>→ #vm</em>
+    └── v86             <em>← emulator archive</em></pre>
+          </div>
+          <div class="field-notes">
+            <article>
+              <span class="note-index">A</span>
+              <h3>Bind</h3>
+              <p>Attach a resource at a path. It can come from HTTP, RAM, persistent browser storage or a device.</p>
+            </article>
+            <article>
+              <span class="note-index">B</span>
+              <h3>Namespace</h3>
+              <p>A private view of the filesystem assembled for this application—not the host Mac’s filesystem.</p>
+            </article>
+            <details>
+              <summary>See the actual HTML</summary>
+              <pre><code>&lt;wanix-bind dst="." type="archive"
+  src="wanix-linux.tgz"&gt;
+&lt;wanix-bind dst="workspace"
+  src="#ramfs/new"&gt;
+&lt;wanix-bind dst="vm" src="#vm"&gt;</code></pre>
+            </details>
+          </div>
+        </div>
+      </section>
+
+      <section class="lesson source-lesson" aria-labelledby="source-title">
+        <div class="lesson-number">02</div>
+        <div class="lesson-heading">
+          <p class="kicker">MAKE IT YOURS</p>
+          <h2 id="source-title">Change what the hardware does.</h2>
+          <p>This is not a configuration block bolted onto a cached application. Your choices become C++ source, and Wanix builds a new application and firmware image.</p>
+        </div>
+
+        <div class="source-grid">
+          <form class="control-module" onsubmit="return false">
+            <div class="module-lights"><i></i><i></i><i></i></div>
+            <label for="owner">Who is the board blinking for?</label>
+            <input id="owner" value="Luke" maxlength="64" autocomplete="off">
+
+            <label for="blink-period">LED flash cycle</label>
+            <input id="blink-period" type="range" min="200" max="3000" step="100" value="1000">
+            <div class="range-readout">
+              <output id="blink-value" for="blink-period">1.0 seconds · 1.00 Hz</output>
+              <span class="mini-led" aria-hidden="true"></span>
+            </div>
+
+            <button id="build" disabled>Booting the Wanix builder…</button>
+            <p id="status" class="status" aria-live="polite">Loading Wanix and starting Linux.</p>
+          </form>
+
+          <div class="code-panel dark-panel">
+            <div class="panel-bar"><span>GENERATED SOURCE</span><span>workspace/main.cpp</span></div>
+            <pre><code id="source-preview"></code></pre>
+          </div>
+        </div>
+      </section>
+
+      <section class="lesson build-lesson" aria-labelledby="build-title">
+        <div class="lesson-number">03</div>
+        <div class="lesson-heading">
+          <p class="kicker">CROSS THE VM BOUNDARY</p>
+          <h2 id="build-title">Drive Linux through a Wanix terminal.</h2>
+          <p>JavaScript writes the source into the shared namespace, opens the VM terminal as a file, sends one shell command and watches for the result to appear back in the tree.</p>
+        </div>
+
+        <div class="build-pipeline" aria-label="Firmware build stages">
+          <div class="build-stage" data-stage="compile"><span>1</span><strong>Compile</strong><small>main.cpp → object</small></div>
+          <div class="pipeline-arrow">→</div>
+          <div class="build-stage" data-stage="link"><span>2</span><strong>Link</strong><small>object + Arduino core → ELF</small></div>
+          <div class="pipeline-arrow">→</div>
+          <div class="build-stage" data-stage="package"><span>3</span><strong>Package</strong><small>ELF → firmware.bin</small></div>
+        </div>
+
+        <div class="terminal-panel dark-panel">
+          <div class="panel-bar"><span>LINUX GUEST TERMINAL</span><span id="elapsed">waiting for builder</span></div>
+          <div id="terminal" class="terminal" aria-label="Build output"></div>
+        </div>
+      </section>
+
+      <section class="lesson artifact-lesson" aria-labelledby="artifact-title">
+        <div class="lesson-number">04</div>
+        <div class="lesson-heading">
+          <p class="kicker">RETURN TO THE BROWSER</p>
+          <h2 id="artifact-title">The output becomes another file.</h2>
+          <p>The guest writes <code>firmware.bin</code> into the shared workspace. Wanix lets browser JavaScript read it directly—there is no upload or API response.</p>
+        </div>
+
+        <div class="artifact-grid">
+          <article class="artifact-card">
+            <p class="artifact-name">firmware.bin</p>
+            <strong id="firmware-size">—</strong>
+            <span>flashable bytes</span>
+          </article>
+          <article class="artifact-card">
+            <p class="artifact-name">firmware.elf</p>
+            <strong id="elf-size">—</strong>
+            <span>linked executable</span>
+          </article>
+          <article class="artifact-card wide">
+            <p class="artifact-name">SHA-256</p>
+            <strong id="firmware-hash">Build to calculate</strong>
+            <span>content identity</span>
+          </article>
+
+          <div class="flash-map">
+            <div class="panel-bar"><span>D1 MINI PRO FLASH MAP</span><span>16 MiB</span></div>
+            <div class="memory-ruler"><span>0x000000</span><span>0x100000</span><span>0x400000</span><span>0xFFFFFF</span></div>
+            <div class="memory-track">
+              <div id="firmware-region" class="firmware-region"><span>new application</span></div>
+              <div class="filesystem-region"><span>filesystem / unused</span></div>
+            </div>
+            <p id="artifact-summary">No artifact yet. The entire application will be written from offset zero.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="lesson shell-lesson" aria-labelledby="shell-title">
+        <div class="lesson-number">05</div>
+        <div class="lesson-heading">
+          <p class="kicker">OPEN THE MACHINE</p>
+          <h2 id="shell-title">Don’t take our word for it. Look around.</h2>
+          <p><code>wanix-term</code> attaches an xterm directly to the same terminal device the build controller used. This is the actual Alpine guest, with the same namespace and files—not a transcript or simulated shell.</p>
+        </div>
+
+        <div class="shell-grid">
+          <div class="shell-guide">
+            <div class="shell-idea">
+              <span class="note-index">C</span>
+              <h3>A terminal is a file</h3>
+              <p>The UI opens <code id="terminal-path">#term/…/data</code> for reading and writing. That same file can serve automation first and an interactive human next.</p>
+            </div>
+            <div class="try-commands">
+              <p class="artifact-name">TRY THESE INSIDE LINUX</p>
+              <code>pwd</code>
+              <code>ls -lah /workspace</code>
+              <code>sed -n '1,80p' /workspace/main.cpp</code>
+              <code>find /opt -maxdepth 2 -type d</code>
+              <code>xtensa-lx106-elf-g++ --version</code>
+              <code id="artifact-command">find /workspace/artifacts -type f</code>
+            </div>
+            <button id="open-shell" class="shell-button" disabled>Open the Linux terminal</button>
+            <p id="shell-status" class="shell-status">The shell becomes available when the Wanix VM is ready.</p>
+          </div>
+
+          <div class="interactive-shell dark-panel">
+            <div class="panel-bar"><span>INTERACTIVE WANIX TERMINAL</span><span>same guest · same files</span></div>
+            <div id="guest-shell-mount" class="guest-shell-mount">
+              <div class="shell-placeholder">
+                <span>&gt;_</span>
+                <p>Open the terminal to explore the Linux machine.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="lesson flash-lesson" aria-labelledby="flash-title">
+        <div class="lesson-number">06</div>
+        <div class="lesson-heading">
+          <p class="kicker">ENTER THE PHYSICAL WORLD</p>
+          <h2 id="flash-title">A human opens the USB door.</h2>
+          <p>Wanix produces the bytes; ESP Web Tools asks the browser for a serial port. The chooser and confirmation require you because a web page must not silently rewrite attached hardware.</p>
+        </div>
+
+        <div class="device-grid">
+          <div class="board-stage">
+            <div class="board" aria-label="Stylized Wemos D1 mini Pro">
+              <div class="antenna"></div>
+              <div class="chip">ESP<br><small>8266</small></div>
+              <div class="board-led" title="Built-in LED preview"></div>
+              <div class="usb-port"></div>
+              <span class="pin-row left"></span><span class="pin-row right"></span>
+            </div>
+            <div class="board-caption"><span class="live-dot"></span> LED preview follows your selected rate</div>
+          </div>
+
+          <div class="flash-controls">
+            <div class="safety-note">
+              <strong>Before you flash</strong>
+              <p>This lab targets a Wemos D1 mini Pro with an ESP8266 and 16 MiB flash. Installation replaces the application at offset <code>0x000000</code>.</p>
+            </div>
+            <esp-web-install-button id="installer" hidden>
+              <button slot="activate" class="flash-button">Choose D1 mini Pro &amp; flash</button>
+              <span slot="unsupported">Web Serial is unavailable here. Use desktop Chrome or Edge.</span>
+              <span slot="not-allowed">Serve this page from HTTPS or localhost to use Web Serial.</span>
+            </esp-web-install-button>
+            <div class="secondary-actions">
+              <a id="download" class="secondary-button" hidden>Download firmware.bin</a>
+              <button id="preview-output" class="secondary-button" disabled>Preview expected output</button>
+            </div>
+            <pre id="device-output" class="device-output" hidden></pre>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <p><strong>What Wanix contributed:</strong> the namespace, browser-backed files, VM device, terminal-as-file and the path that returns a Linux-built artifact to JavaScript.</p>
+      <p class="footer-note">The Arduino core is packaged as a precompiled library, like a standard library. Your <code>main.cpp</code>, ELF and complete flashable application are rebuilt for every run. <a href="https://github.com/lukec/wanix/tree/codex/spike-personal-firmware/spikes/personal-firmware">VIEW SOURCE</a> · <a href="https://wanix.sh/">LEARN ABOUT WANIX</a></p>
+    </footer>
+  </div>
+
+  <script>
+    addEventListener("error", (event) => {
+      document.querySelector("#status").textContent = `Page error: ${event.message}`;
+    });
+    addEventListener("unhandledrejection", (event) => {
+      document.querySelector("#status").textContent = `Page error: ${event.reason}`;
+    });
+  </script>
+
+  <wanix-namespace id="linux" debug>
+    <wanix-bind dst="." type="archive" src="https://cdn.jsdelivr.net/npm/wanix-extras@0.4.0-rc2/dist/wanix-linux.tgz"></wanix-bind>
+    <wanix-bind dst="." type="archive" src="./assets/wanix-esp8266-toolchain.tgz?v=4"></wanix-bind>
+    <wanix-bind dst="workspace" src="#ramfs/new"></wanix-bind>
+    <wanix-bind dst="workspace/build.sh" type="file" src="./direct-build.sh?v=3" perm="0755"></wanix-bind>
+    <wanix-bind dst="vm" src="#vm"></wanix-bind>
+    <wanix-bind dst="#vm/v86" type="archive" src="https://cdn.jsdelivr.net/npm/wanix-extras@0.4.0-rc2/dist/v86.tgz"></wanix-bind>
+    <wanix-vm id="builder" export="ttyS0" mem="256M" term start></wanix-vm>
+  </wanix-namespace>
+</body>
+</html>
