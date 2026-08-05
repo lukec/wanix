@@ -24,6 +24,8 @@
 
 html { scroll-behavior: smooth; }
 
+html:has(.how-popover:popover-open) { overflow: hidden; }
+
 body {
   margin: 0;
   min-width: 320px;
@@ -202,7 +204,10 @@ main { display: grid; gap: 20px; }
   background: var(--paper);
   color: var(--ink);
   box-shadow: 10px 12px 0 var(--ink);
+  scrollbar-width: none;
 }
+
+.how-popover::-webkit-scrollbar { display: none; }
 
 .how-popover::backdrop {
   background: rgba(16, 23, 21, 0.66);
@@ -946,7 +951,14 @@ wanix-namespace { display: none; }
   .how-popover-bar { min-height: 45px; padding-left: 13px; font-size: 0.64rem; }
   .how-close { width: 45px; }
   .how-popover-body { padding: 22px 18px 23px; }
-  .how-popover pre { margin: 17px 0; padding: 13px; font-size: 0.68rem; }
+  .how-popover pre {
+    margin: 17px 0;
+    padding: 13px;
+    overflow-x: hidden;
+    overflow-wrap: anywhere;
+    white-space: pre-wrap;
+    font-size: 0.68rem;
+  }
   .wanix-idea { padding: 48px 14px 15px; }
   .build-pipeline { grid-template-columns: 1fr; gap: 7px; }
   .pipeline-arrow { transform: rotate(90deg); font-size: 1rem; }
