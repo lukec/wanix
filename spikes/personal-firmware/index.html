@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Wanix Flash Lab</title>
   <meta name="description" content="Learn Wanix by compiling and flashing a complete ESP8266 application locally inside one browser tab—without a build server.">
-  <link rel="stylesheet" href="./style.css?v=3">
+  <link rel="stylesheet" href="./style.css?v=4">
   <script type="module" src="./vendor/wanix.min.js"></script>
   <script type="module" src="https://unpkg.com/esp-web-tools@10/dist/web/install-button.js?module"></script>
   <script type="module" src="./app.js"></script>
@@ -458,6 +458,27 @@ term.setAttribute("scrollback", "2000");</code></pre>
     <footer>
       <p><strong>No backend did the work:</strong> Wanix supplied the namespace, browser-backed files, VM device, terminal-as-file and the path that returns the Linux-built artifact to JavaScript—all inside this tab.</p>
       <p class="footer-note">Static host only · no build API · no source or firmware upload. The Arduino core is packaged as a precompiled library, like a standard library. Your <code>main.cpp</code>, ELF and complete flashable application are rebuilt for every run. <a href="https://github.com/lukec/wanix/tree/codex/spike-personal-firmware/spikes/personal-firmware">VIEW SOURCE</a> · <a href="https://wanix.sh/">LEARN ABOUT WANIX</a></p>
+      <div class="footer-signoff">
+        <div class="site-badges" aria-label="Wanix Flash Lab badges">
+          <a class="web-badge badge-wanix" href="https://wanix.sh/" aria-label="Wanix: Unix for the Web">
+            <span class="badge-icon">W</span>
+            <span class="badge-copy"><strong>WANIX</strong><small>UNIX FOR THE WEB</small></span>
+          </a>
+          <span class="web-badge badge-local" role="img" aria-label="Browser-local build">
+            <span class="badge-icon">⌂</span>
+            <span class="badge-copy"><strong>LOCAL</strong><small>BROWSER BUILD</small></span>
+          </span>
+          <span class="web-badge badge-esp" role="img" aria-label="ESP8266 Flash Lab">
+            <span class="badge-icon">⚡</span>
+            <span class="badge-copy"><strong>ESP8266</strong><small>FLASH LAB</small></span>
+          </span>
+          <a class="web-badge badge-closscraft" href="https://closscraft.ca/" aria-label="Closscraft Labs">
+            <span class="badge-icon">C</span>
+            <span class="badge-copy"><strong>CLOSSCRAFT</strong><small>LABS</small></span>
+          </a>
+        </div>
+        <p class="maker-credit">Built by <a href="https://closscraft.ca/">Closscraft Labs</a>.</p>
+      </div>
     </footer>
   </div>
 

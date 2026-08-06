@@ -923,6 +923,90 @@ footer {
 footer p { margin: 0; }
 .footer-note { font-size: 0.7rem; letter-spacing: 0.04em; }
 
+.footer-signoff {
+  display: grid;
+  grid-column: 1 / -1;
+  gap: 10px;
+  justify-items: center;
+  padding-top: 4px;
+}
+
+.site-badges {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 7px;
+}
+
+.web-badge {
+  display: inline-flex;
+  width: 88px;
+  height: 31px;
+  flex: 0 0 88px;
+  align-items: stretch;
+  overflow: hidden;
+  border: 1px solid #111;
+  color: #fff;
+  background: #303060;
+  box-shadow: 1px 1px 0 #fff, 2px 2px 0 #777;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 8px;
+  font-weight: 700;
+  line-height: 1;
+  text-align: left;
+  text-decoration: none;
+  image-rendering: pixelated;
+}
+
+.web-badge:visited { color: #fff; }
+
+.badge-icon {
+  display: inline-flex;
+  width: 28px;
+  flex: 0 0 28px;
+  align-items: center;
+  justify-content: center;
+  border-right: 1px solid rgba(255, 255, 255, 0.55);
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 29px;
+  text-shadow: 1px 1px 0 #000;
+}
+
+.badge-copy {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 1px 2px 0;
+  white-space: nowrap;
+}
+
+.badge-copy strong { display: block; font-size: 10px; letter-spacing: -0.04em; line-height: 1; }
+.badge-copy small { display: block; margin-top: 2px; font-size: 6px; font-weight: 700; letter-spacing: 0.01em; line-height: 1; }
+
+.badge-wanix { color: #b9ff8c; background: #020500; }
+.badge-wanix .badge-icon { color: #b9ff8c; border-color: #4b9c2e; background: #182d10; font-family: "Courier New", Courier, monospace; }
+.badge-wanix .badge-copy strong { color: #fff; font-family: "Courier New", Courier, monospace; font-size: 13px; }
+
+.badge-local { color: #fff4ad; background: #133e72; }
+.badge-local .badge-icon { color: #133e72; border-color: #fff4ad; background: #fff4ad; text-shadow: none; }
+.badge-local .badge-copy strong { font-family: "Courier New", Courier, monospace; font-size: 11px; }
+
+.badge-esp { color: #261400; background: #ffb52e; }
+.badge-esp .badge-icon { color: #fff; border-color: #261400; background: #d74625; }
+.badge-esp .badge-copy strong { font-family: "Courier New", Courier, monospace; font-size: 9px; }
+
+.badge-closscraft { color: #ffef9b; background: #6f151a; }
+.badge-closscraft .badge-icon { color: #6f151a; border-color: #ffef9b; background: #ffef9b; text-shadow: none; }
+.badge-closscraft .badge-copy strong { color: #fff; font-family: "Courier New", Courier, monospace; font-size: 8px; }
+
+.maker-credit { color: var(--muted); font-size: 0.72rem; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; }
+.maker-credit a { color: var(--red-dark); }
+
 wanix-namespace { display: none; }
 
 @media (max-width: 960px) {
@@ -968,6 +1052,7 @@ wanix-namespace { display: none; }
   .filesystem-region span { display: none; }
   .board-stage { min-height: 360px; }
   footer { grid-template-columns: 1fr; }
+  .site-badges { max-width: 190px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
