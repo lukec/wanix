@@ -79,6 +79,13 @@ h1 {
   letter-spacing: -0.075em;
 }
 
+h1 a {
+  color: inherit;
+  text-decoration-color: var(--red);
+  text-decoration-thickness: 0.08em;
+  text-underline-offset: 0.08em;
+}
+
 h2 {
   margin-bottom: 12px;
   font-size: clamp(1.9rem, 4vw, 3.35rem);
@@ -100,31 +107,28 @@ h3 { margin-bottom: 7px; }
   position: relative;
   display: grid;
   gap: 6px;
-  padding: 19px 20px;
-  border: 2px solid var(--ink);
+  padding: 17px 18px;
+  border: 1px solid #c9c4b8;
   border-radius: 14px;
-  background: #fffaf0;
-  box-shadow: 5px 5px 0 var(--ink);
+  background: rgba(255, 250, 240, 0.62);
 }
 
 .location-heading {
-  display: flex;
-  gap: 8px;
-  align-items: center;
+  color: var(--muted);
   font-size: 0.71rem;
   font-weight: 850;
 }
 
-.location-card strong { font-size: 1.25rem; }
-.location-card > span:not(.local-pill, .live-dot) { color: var(--muted); font-size: 0.9rem; }
+.location-card strong { font-size: 1.05rem; }
+.location-card > span:not(.local-pill) { color: var(--muted); font-size: 0.9rem; }
 
 .local-pill {
   justify-self: start;
   margin-top: 7px;
   padding: 5px 8px;
   border-radius: 6px;
-  background: #dff4e6;
-  color: #176c45;
+  background: #ece9df;
+  color: #5b5b52;
   font-size: 0.65rem;
   font-weight: 900;
 }
@@ -268,7 +272,7 @@ main { display: grid; gap: 20px; }
   box-shadow: 7px 7px 0 rgba(23, 26, 24, 0.95);
 }
 
-.source-lesson, .flash-lesson { scroll-margin-top: 145px; }
+.source-lesson, .build-lesson, .flash-lesson { scroll-margin-top: 145px; }
 .flash-lesson[data-next-action="true"] { box-shadow: 7px 7px 0 rgba(23, 26, 24, 0.95), 0 0 0 6px rgba(84, 185, 133, 0.35); }
 
 .intro { margin-bottom: 20px; }

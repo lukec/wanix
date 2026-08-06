@@ -59,8 +59,6 @@ const download = document.querySelector("#download");
 const previewOutput = document.querySelector("#preview-output");
 const deviceOutput = document.querySelector("#device-output");
 const namespaceState = document.querySelector("#namespace-state");
-const runtimeLocation = document.querySelector("#runtime-location");
-const runtimeDetail = document.querySelector("#runtime-detail");
 const firmwareSize = document.querySelector("#firmware-size");
 const elfSize = document.querySelector("#elf-size");
 const firmwareHash = document.querySelector("#firmware-hash");
@@ -121,7 +119,6 @@ vm.addEventListener("error", (event) => {
 
 vm._nsReady.then(async () => {
   namespaceState.textContent = "mounted";
-  setRuntime("Linux guest", "Wanix is waiting for v86 to expose its task device.");
   setStatus("The namespace is ready. Linux is booting in v86…", true);
   setActionGuide("booting", "Wanix is ready; Linux is booting in this tab…");
   const taskPath = `${vm.path}/guest/#task`;
@@ -137,7 +134,6 @@ vm._nsReady.then(async () => {
   elapsed.textContent = `builder ready in ${bootSeconds}s`;
   setStatus(`Ready. Wanix composed the namespace and booted Linux in ${bootSeconds}s.`);
   setActionGuide("customize");
-  setRuntime("Browser host", "The UI is ready; Linux waits behind a Wanix terminal file.");
 });
 
 buildButton.addEventListener("click", async () => {
@@ -181,7 +177,7 @@ buildButton.addEventListener("click", async () => {
   setStatus(`Building a complete ${profile.shortName} application for ${owner}…`, true);
   setActionGuide("compile", "Writing main.cpp, then compiling it inside Linux…");
   elapsed.textContent = "build running";
-  setRuntime("Browser → Wanix", "JavaScript is writing /workspace/main.cpp.");
+  document.querySelector(".build-lesson").scrollIntoView({ block: "start" });
 
   const browserStart = performance.now();
   let terminalReader;
@@ -191,7 +187,6 @@ buildButton.addEventListener("click", async () => {
   try {
     await system.root.writeFile(sourcePath, source);
     progress.textContent += "[browser] open the Linux terminal through Wanix\n";
-    setRuntime("Linux guest", "The shell is compiling source from the shared namespace.");
 
     const terminalData = await system.root.openReadable(`${vm.term}/data`);
     terminalReader = terminalData.getReader();
@@ -282,7 +277,6 @@ buildButton.addEventListener("click", async () => {
     flashNextCue.hidden = false;
     document.querySelector(".flash-lesson").dataset.nextAction = "true";
     shellStatus.textContent = "Build complete. Reopen the same guest and inspect the files it produced.";
-    setRuntime("Browser host", `Wanix returned /workspace/artifacts/${buildID}/firmware.bin.`);
   } catch (error) {
     progress.textContent = `${error}${terminalOutput ? `\n${terminalOutput}` : ""}`;
     elapsed.textContent = "build failed";
@@ -290,7 +284,6 @@ buildButton.addEventListener("click", async () => {
     setActionGuide("error", "The build stopped. Inspect the transcript, then retry.");
     buildButton.dataset.nextAction = "true";
     shellStatus.textContent = "The guest is still available; open it to inspect the failed build.";
-    setRuntime("Browser host", "The build stopped; inspect the Linux transcript.");
   } finally {
     await terminalReader?.cancel().catch(() => {});
     terminalWriter?.releaseLock();
@@ -321,7 +314,6 @@ openShellButton.addEventListener("click", async () => {
   shellMount.append(guestShell);
   openShellLabel.textContent = "Close the Linux terminal";
   shellStatus.textContent = `Attached directly to ${vm.term}/data. This sandbox disappears on reload.`;
-  setRuntime("Linux guest", "Your keyboard is attached through wanix-term.");
   await guestShell._nsReady;
   guestShell.focus();
 });
@@ -481,11 +473,6 @@ function clearBuiltArtifact() {
   firmwareRegion.style.width = "3.5%";
   firmwareRegion.removeAttribute("title");
   updateBoardProfile(selectedBoardProfile());
-}
-
-function setRuntime(location, detail) {
-  runtimeLocation.textContent = location;
-  runtimeDetail.textContent = detail;
 }
 
 function setStatus(message, busy = false) {

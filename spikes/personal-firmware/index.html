@@ -5,24 +5,24 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Wanix Flash Lab</title>
   <meta name="description" content="Learn Wanix by compiling and flashing a complete ESP8266 application locally inside one browser tab—without a build server.">
-  <link rel="stylesheet" href="./style.css?v=6">
+  <link rel="stylesheet" href="./style.css?v=7">
   <script type="module" src="./vendor/wanix.min.js"></script>
   <script type="module" src="https://unpkg.com/esp-web-tools@10/dist/web/install-button.js?module"></script>
-  <script type="module" src="./app.js?v=3"></script>
+  <script type="module" src="./app.js?v=4"></script>
 </head>
 <body>
   <div class="workbench">
     <header class="hero">
       <div>
         <p class="kit-label">WANIX FIELD KIT · LAB 01 · ESP8266</p>
-        <h1>Wanix Flash Lab</h1>
+        <h1><a href="https://wanix.dev/">Wanix</a> Flash Lab</h1>
         <p class="hero-copy">Build a complete microcontroller application inside a Linux machine that exists inside this browser tab—then carry it across USB into the physical world. There is no application backend or remote build service: the host serves only static files, while your source, Linux VM, compiler job and firmware all stay inside your browser.</p>
       </div>
-      <aside class="location-card" aria-live="polite">
-        <div class="location-heading"><span class="live-dot"></span> WHERE IS THIS RUNNING?</div>
-        <strong id="runtime-location">Browser host</strong>
-        <span id="runtime-detail">Wanix is composing a filesystem.</span>
-        <span class="local-pill">NO BACKEND · BROWSER-LOCAL BUILD</span>
+      <aside class="location-card">
+        <div class="location-heading">ALL LOCAL</div>
+        <strong>Everything active runs in your browser.</strong>
+        <span>The server only delivers static files. There is no backend, remote build or upload.</span>
+        <span class="local-pill">SOURCE · LINUX · COMPILER · FIRMWARE</span>
       </aside>
     </header>
 
@@ -204,7 +204,7 @@ ESP8266 target   physical Xtensa microcontroller</code></pre>
             <p id="board-support" class="board-support" data-level="verified"></p>
 
             <label for="owner">Who is the board blinking for?</label>
-            <input id="owner" value="Luke" maxlength="64" autocomplete="off">
+            <input id="owner" value="Jeff" maxlength="64" autocomplete="off">
 
             <label for="blink-period">LED flash cycle</label>
             <input id="blink-period" type="range" min="200" max="3000" step="100" value="1000">
@@ -238,7 +238,7 @@ ESP8266 target   physical Xtensa microcontroller</code></pre>
             <p class="how-kicker">SOURCE GENERATION</p>
             <h3 id="how-02-title">The controls generate a complete C++ translation unit.</h3>
             <p class="how-lede">Every input event calls <code>firmwareSource(owner, cycleMs, profile)</code>. The source panel is therefore a preview of the exact text that will become <code>/workspace/main.cpp</code>.</p>
-            <pre><code>constexpr char kOwner[] = "Luke";
+            <pre><code>constexpr char kOwner[] = "Jeff";
 constexpr uint32_t kBlinkHalfPeriodMs = 500;
 
 digitalWrite(LED_BUILTIN, LOW);  // LED on
@@ -507,10 +507,10 @@ term.setAttribute("scrollback", "2000");</code></pre>
 
     <footer>
       <p><strong>No backend did the work:</strong> Wanix supplied the namespace, browser-backed files, VM device, terminal-as-file and the path that returns the Linux-built artifact to JavaScript—all inside this tab.</p>
-      <p class="footer-note">Static host only · no build API · no source or firmware upload. The Arduino core is packaged as a precompiled library, like a standard library. Your <code>main.cpp</code>, ELF and complete flashable application are rebuilt for every run. <a href="https://github.com/lukec/wanix/tree/codex/spike-personal-firmware/spikes/personal-firmware">VIEW SOURCE</a> · <a href="https://wanix.sh/">LEARN ABOUT WANIX</a></p>
+      <p class="footer-note">Static host only · no build API · no source or firmware upload. The Arduino core is packaged as a precompiled library, like a standard library. Your <code>main.cpp</code>, ELF and complete flashable application are rebuilt for every run. <a href="https://github.com/lukec/wanix/tree/codex/spike-personal-firmware/spikes/personal-firmware">VIEW SOURCE</a> · <a href="https://wanix.dev/">LEARN ABOUT WANIX</a></p>
       <div class="footer-signoff">
         <div class="site-badges" aria-label="Wanix Flash Lab badges">
-          <a class="web-badge badge-wanix" href="https://wanix.sh/" aria-label="Wanix: Unix for the Web">
+          <a class="web-badge badge-wanix" href="https://wanix.dev/" aria-label="Wanix: Unix for the Web">
             <span class="badge-icon">W</span>
             <span class="badge-copy"><strong>WANIX</strong><small>UNIX FOR THE WEB</small></span>
           </a>
