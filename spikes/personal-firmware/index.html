@@ -5,10 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Wanix Flash Lab</title>
   <meta name="description" content="Learn Wanix by compiling and flashing a complete ESP8266 application locally inside one browser tab—without a build server.">
-  <link rel="stylesheet" href="./style.css?v=5">
+  <link rel="stylesheet" href="./style.css?v=6">
   <script type="module" src="./vendor/wanix.min.js"></script>
   <script type="module" src="https://unpkg.com/esp-web-tools@10/dist/web/install-button.js?module"></script>
-  <script type="module" src="./app.js?v=2"></script>
+  <script type="module" src="./app.js?v=3"></script>
 </head>
 <body>
   <div class="workbench">
@@ -39,9 +39,9 @@
         </a>
       </div>
       <ol class="action-steps">
-        <li data-action-step="customize"><span>1</span><strong>Customize</strong><small>Name + blink rate</small></li>
+        <li data-action-step="customize"><span>1</span><strong>Customize</strong><small>Board + blink rate</small></li>
         <li data-action-step="compile"><span>2</span><strong>Compile</strong><small>Build inside Wanix</small></li>
-        <li data-action-step="flash"><span>3</span><strong>Flash</strong><small>Choose your ESP8266</small></li>
+        <li data-action-step="flash"><span>3</span><strong>Flash</strong><small>Choose your board</small></li>
       </ol>
       <div class="action-progress" aria-hidden="true"><span id="action-progress-bar"></span></div>
     </nav>
@@ -79,8 +79,8 @@
           <span class="machine-index">3</span>
           <p class="module-type">TARGET</p>
           <h3>ESP8266</h3>
-          <p>A Wemos D1 mini Pro runs the code and blinks its LED.</p>
-          <code>80 MHz · 16 MiB flash</code>
+          <p>Your selected ESP8266 development board runs the code and blinks its LED.</p>
+          <code>80 MHz · 4 or 16 MiB flash</code>
         </article>
       </div>
 
@@ -104,7 +104,7 @@ ESP8266 target   physical Xtensa microcontroller</code></pre>
           <ul>
             <li><strong>The browser</strong> owns the page, Wanix namespace, generated source, artifact bytes and permission-gated USB connection.</li>
             <li><strong>v86</strong> emulates an x86 PC capable of booting Alpine Linux. Inside it, ordinary command-line tools cross-compile for a completely different CPU.</li>
-            <li><strong>The ESP8266</strong> never runs Wanix or Linux. It receives the final flash image and boots that native firmware.</li>
+            <li><strong>The selected ESP8266 board</strong> never runs Wanix or Linux. It receives its profile-specific flash image and boots that native firmware.</li>
           </ul>
           <div class="wanix-idea"><strong>WANIX IDEA</strong><p>Wanix gives the browser Unix-shaped ways to connect these components: mounted resources, paths, tasks and byte streams. The network only fetches static HTML, JavaScript, WebAssembly and toolchain archives; it never receives your generated source, shell commands, compiler output or firmware.</p></div>
         </div>
@@ -193,8 +193,16 @@ ESP8266 target   physical Xtensa microcontroller</code></pre>
             <div class="module-lights"><i></i><i></i><i></i></div>
             <div class="action-callout">
               <span aria-hidden="true">1</span>
-              <p><strong>Start here</strong> Change either value—or keep the defaults—then compile a complete firmware image.</p>
+              <p><strong>Start here</strong> Choose your board, personalize its blink, then compile a complete firmware image.</p>
             </div>
+            <label for="board-profile">Which ESP8266 board?</label>
+            <select id="board-profile">
+              <option value="d1_mini_pro">Verified · Wemos D1 mini Pro · 16 MiB</option>
+              <option value="d1_mini">Community test · D1 mini / D1 R2 · 4 MiB</option>
+              <option value="nodemcuv2">Community test · NodeMCU 1.0 / ESP-12E · 4 MiB</option>
+            </select>
+            <p id="board-support" class="board-support" data-level="verified"></p>
+
             <label for="owner">Who is the board blinking for?</label>
             <input id="owner" value="Luke" maxlength="64" autocomplete="off">
 
@@ -229,7 +237,7 @@ ESP8266 target   physical Xtensa microcontroller</code></pre>
           <div class="how-popover-body">
             <p class="how-kicker">SOURCE GENERATION</p>
             <h3 id="how-02-title">The controls generate a complete C++ translation unit.</h3>
-            <p class="how-lede">Every input event calls <code>firmwareSource(owner, cycleMs)</code>. The source panel is therefore a preview of the exact text that will become <code>/workspace/main.cpp</code>.</p>
+            <p class="how-lede">Every input event calls <code>firmwareSource(owner, cycleMs, profile)</code>. The source panel is therefore a preview of the exact text that will become <code>/workspace/main.cpp</code>.</p>
             <pre><code>constexpr char kOwner[] = "Luke";
 constexpr uint32_t kBlinkHalfPeriodMs = 500;
 
@@ -238,7 +246,8 @@ delay(kBlinkHalfPeriodMs);
 digitalWrite(LED_BUILTIN, HIGH); // LED off</code></pre>
             <ul>
               <li>The name is checked as UTF-8 and limited to 64 bytes, then encoded as a safe C++ string literal.</li>
-              <li>The selected full blink cycle is divided into equal ON and OFF delays. The D1 mini’s built-in LED is active-low, so <code>LOW</code> turns it on.</li>
+              <li>The selected full blink cycle is divided into equal ON and OFF delays. These profiles use an active-low built-in LED on GPIO2, so <code>LOW</code> turns it on.</li>
+              <li>The browser sends only a whitelisted profile ID. The guest owns its board macro, pin variant, linker script and flash capacity; UI text never becomes arbitrary compiler flags.</li>
               <li>The Arduino core and SDK libraries are precompiled dependencies. This page still compiles the newly generated <code>main.cpp</code>, then links a new ELF and packages a new flash image.</li>
             </ul>
             <div class="wanix-idea"><strong>WANIX IDEA</strong><p>The UI is a source-code authoring tool. Personalization is not patched into a prebuilt firmware blob; it crosses the browser/guest boundary as an ordinary file.</p></div>
@@ -320,8 +329,8 @@ BUILD_ID=build-… APP_SOURCE=/workspace/main.cpp \
           </article>
 
           <div class="flash-map">
-            <div class="panel-bar"><span>D1 MINI PRO FLASH MAP</span><span>16 MiB</span></div>
-            <div class="memory-ruler"><span>0x000000</span><span>0x100000</span><span>0x400000</span><span>0xFFFFFF</span></div>
+            <div class="panel-bar"><span id="flash-map-name">D1 MINI PRO FLASH MAP</span><span id="flash-map-size">16 MiB</span></div>
+            <div class="memory-ruler"><span>0x000000</span><span id="flash-marker-1">0x100000</span><span id="flash-marker-2">0x400000</span><span id="flash-marker-end">0xFFFFFF</span></div>
             <div class="memory-track">
               <div id="firmware-region" class="firmware-region"><span>new application</span></div>
               <div class="filesystem-region"><span>filesystem / unused</span></div>
@@ -433,14 +442,14 @@ term.setAttribute("scrollback", "2000");</code></pre>
 
         <div class="device-grid">
           <div class="board-stage">
-            <div class="board" aria-label="Stylized Wemos D1 mini Pro">
+            <div id="board-graphic" class="board" aria-label="Stylized ESP8266 development board">
               <div class="antenna"></div>
               <div class="chip">ESP<br><small>8266</small></div>
               <div class="board-led" title="Built-in LED preview"></div>
               <div class="usb-port"></div>
               <span class="pin-row left"></span><span class="pin-row right"></span>
             </div>
-            <div class="board-caption"><span class="live-dot"></span> LED preview follows your selected rate</div>
+            <div class="board-caption"><span class="live-dot"></span> <span id="board-caption-model">D1 mini Pro</span> LED preview follows your selected rate</div>
           </div>
 
           <div class="flash-controls">
@@ -450,12 +459,12 @@ term.setAttribute("scrollback", "2000");</code></pre>
             </div>
             <div class="safety-note">
               <strong>Before you flash</strong>
-              <p>This lab targets a Wemos D1 mini Pro with an ESP8266 and 16 MiB flash. Installation replaces the application at offset <code>0x000000</code>.</p>
+              <p id="flash-safety">This lab targets a Wemos D1 mini Pro with an ESP8266 and 16 MiB flash. Installation replaces the application at offset <code>0x000000</code>.</p>
             </div>
             <esp-web-install-button id="installer" hidden>
               <button id="flash-activate" slot="activate" class="flash-button">
                 <span class="button-icon" aria-hidden="true">⚡</span>
-                <span>Choose D1 mini Pro &amp; flash</span>
+                <span id="flash-label">Choose D1 mini Pro &amp; flash</span>
               </button>
               <span slot="unsupported">Web Serial is unavailable here. Use desktop Chrome or Edge.</span>
               <span slot="not-allowed">Serve this page from HTTPS or localhost to use Web Serial.</span>
@@ -486,6 +495,7 @@ term.setAttribute("scrollback", "2000");</code></pre>
             <ol>
               <li>Clicking the install button is the required human gesture that lets the browser show its serial-port chooser.</li>
               <li>ESP Web Tools opens the selected USB serial adapter and speaks the ESP8266 ROM bootloader protocol.</li>
+              <li>It verifies the ESP8266 chip family, not whether the physical board is a D1 mini or NodeMCU. The selected profile therefore determines the firmware layout, and community-test profiles remain explicitly unverified on hardware.</li>
               <li>The complete application image is written from offset zero; a new install may erase flash first. On reset, the ROM loads it and the LED begins the active-low blink loop you compiled.</li>
               <li>Browser permission and USB are the only physical boundary. The source, compiler invocation and firmware bytes remain local; this site is only static files.</li>
             </ol>
@@ -533,9 +543,9 @@ term.setAttribute("scrollback", "2000");</code></pre>
 
   <wanix-namespace id="linux" debug>
     <wanix-bind dst="." type="archive" src="https://cdn.jsdelivr.net/npm/wanix-extras@0.4.0-rc2/dist/wanix-linux.tgz"></wanix-bind>
-    <wanix-bind dst="." type="archive" src="./assets/wanix-esp8266-toolchain.tgz?v=4"></wanix-bind>
+    <wanix-bind dst="." type="archive" src="./assets/wanix-esp8266-toolchain.tgz?v=5"></wanix-bind>
     <wanix-bind dst="workspace" src="#ramfs/new"></wanix-bind>
-    <wanix-bind dst="workspace/build.sh" type="file" src="./direct-build.sh?v=3" perm="0755"></wanix-bind>
+    <wanix-bind dst="workspace/build.sh" type="file" src="./direct-build.sh?v=4" perm="0755"></wanix-bind>
     <wanix-bind dst="vm" src="#vm"></wanix-bind>
     <wanix-bind dst="#vm/v86" type="archive" src="https://cdn.jsdelivr.net/npm/wanix-extras@0.4.0-rc2/dist/v86.tgz"></wanix-bind>
     <wanix-vm id="builder" export="ttyS0" mem="256M" term start></wanix-vm>

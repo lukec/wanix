@@ -7,7 +7,36 @@ ELF2BIN=${ELF2BIN:-/usr/local/bin/wanix-elf2bin}
 WORKSPACE=${WORKSPACE:-/workspace}
 BUILD_ID=${BUILD_ID:-manual}
 APP_SOURCE=${APP_SOURCE:-$WORKSPACE/src/main.cpp}
+BOARD_PROFILE=${BOARD_PROFILE:-d1_mini_pro}
 RESULT_DIR="$WORKSPACE/artifacts/$BUILD_ID"
+
+case "$BOARD_PROFILE" in
+    d1_mini_pro)
+        BOARD_DEFINE=ARDUINO_ESP8266_WEMOS_D1MINIPRO
+        BOARD_NAME=PLATFORMIO_D1_MINI_PRO
+        BOARD_VARIANT=d1_mini
+        LINKER_SCRIPT=eagle.flash.16m14m.ld
+        FLASH_BYTES=16777216
+        ;;
+    d1_mini)
+        BOARD_DEFINE=ARDUINO_ESP8266_WEMOS_D1MINI
+        BOARD_NAME=PLATFORMIO_D1_MINI
+        BOARD_VARIANT=d1_mini
+        LINKER_SCRIPT=eagle.flash.4m1m.ld
+        FLASH_BYTES=4194304
+        ;;
+    nodemcuv2)
+        BOARD_DEFINE=ARDUINO_ESP8266_NODEMCU
+        BOARD_NAME=PLATFORMIO_NODEMCUV2
+        BOARD_VARIANT=nodemcu
+        LINKER_SCRIPT=eagle.flash.4m1m.ld
+        FLASH_BYTES=4194304
+        ;;
+    *)
+        printf 'unsupported BOARD_PROFILE: %s\n' "$BOARD_PROFILE" >&2
+        exit 2
+        ;;
+esac
 
 if [ -z "${BUILD_DIR:-}" ]; then
     if [ -r /proc/mounts ]; then
@@ -37,25 +66,26 @@ export PATH
 
 build_start=$(date +%s)
 
+printf '[wanix] target %s (%s-byte flash)\n' "$BOARD_PROFILE" "$FLASH_BYTES"
 printf '[wanix] 1/3 compile personalized main.cpp\n'
 xtensa-lx106-elf-g++ -B"$TOOLCHAIN/bin/" -o "$BUILD_DIR/main.cpp.o" -c \
     -fno-rtti -std=c++11 -Os -mlongcalls -mtext-section-literals \
     -falign-functions=4 -U__STRICT_ANSI__ -ffunction-sections \
     -fdata-sections -fno-exceptions -Wall \
     -DPLATFORMIO=60119 -DESP8266 -DARDUINO_ARCH_ESP8266 \
-    -DARDUINO_ESP8266_WEMOS_D1MINIPRO -DF_CPU=80000000L -D__ets__ \
+    -D"$BOARD_DEFINE" -DF_CPU=80000000L -D__ets__ \
     -DICACHE_FLASH -DARDUINO=10805 \
-    -DARDUINO_BOARD=\"PLATFORMIO_D1_MINI_PRO\" -DFLASHMODE_DIO \
+    -DARDUINO_BOARD="\"$BOARD_NAME\"" -DFLASHMODE_DIO \
     -DLWIP_OPEN_SRC -DNONOSDK22x_190703=1 -DTCP_MSS=536 \
     -DLWIP_FEATURES=1 -DLWIP_IPV6=0 -DVTABLES_IN_FLASH \
     -I"$FRAMEWORK/cores/esp8266" -I"$FRAMEWORK/sdk/include" \
     -I"$FRAMEWORK/sdk/libc/xtensa-lx106-elf/include" \
-    -I"$FRAMEWORK/sdk/lwip2/include" -I"$FRAMEWORK/variants/d1_mini" \
+    -I"$FRAMEWORK/sdk/lwip2/include" -I"$FRAMEWORK/variants/$BOARD_VARIANT" \
     "$APP_SOURCE"
 
 printf '[wanix] 2/3 link a complete ESP8266 firmware.elf\n'
 xtensa-lx106-elf-g++ -B"$TOOLCHAIN/bin/" -o "$BUILD_DIR/firmware.elf" \
-    -T eagle.flash.16m14m.ld -Os -nostdlib -Wl,--no-check-sections \
+    -T "$LINKER_SCRIPT" -Os -nostdlib -Wl,--no-check-sections \
     -Wl,-static -Wl,--gc-sections -Wl,-wrap,system_restart_local \
     -Wl,-wrap,spi_flash_read -u app_entry -u _printf_float \
     -u _scanf_float -u _DebugExceptionVector -u _DoubleExceptionVector \
@@ -80,6 +110,6 @@ firmware_bytes=$(wc -c < "$BUILD_DIR/firmware.bin" | tr -d ' ')
 elf_bytes=$(wc -c < "$BUILD_DIR/firmware.elf" | tr -d ' ')
 source_bytes=$(wc -c < "$APP_SOURCE" | tr -d ' ')
 build_seconds=$((build_end - build_start))
-printf '{"ok":true,"buildSeconds":%s,"sourceBytes":%s,"elfBytes":%s,"firmwareBytes":%s}\n' \
-    "$build_seconds" "$source_bytes" "$elf_bytes" "$firmware_bytes" \
+printf '{"ok":true,"boardProfile":"%s","flashBytes":%s,"buildSeconds":%s,"sourceBytes":%s,"elfBytes":%s,"firmwareBytes":%s}\n' \
+    "$BOARD_PROFILE" "$FLASH_BYTES" "$build_seconds" "$source_bytes" "$elf_bytes" "$firmware_bytes" \
     > "$RESULT_DIR/result.json"

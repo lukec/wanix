@@ -1,6 +1,6 @@
 # Wanix Flash Lab
 
-Wanix Flash Lab is an explorable Wanix lesson that builds a complete ESP8266 application inside the browser and prepares it for Web Serial installation on a Wemos D1 mini Pro.
+Wanix Flash Lab is an explorable Wanix lesson that builds a complete ESP8266 application inside the browser and prepares it for Web Serial installation on a selected development board.
 
 A visitor changes a name and the built-in LED's flash rate. Browser JavaScript generates `main.cpp`; Wanix boots an Alpine Linux guest in v86; the guest compiles and links the application with the real 32-bit Xtensa toolchain; and the resulting `firmware.bin` returns through the Wanix filesystem.
 
@@ -28,7 +28,19 @@ constexpr char kOwner[] = "Luke";
 constexpr uint32_t kBlinkHalfPeriodMs = 500;
 ```
 
-Both values affect the target application. The serial greeting confirms the name, while the D1 mini Pro's built-in active-low LED makes the selected timing directly visible.
+Both values affect the target application. The serial greeting confirms the name and selected board profile, while the built-in active-low LED makes the selected timing directly visible.
+
+## Board profiles
+
+The browser passes one whitelisted profile name to the guest build. `direct-build.sh` owns the corresponding compiler macro, pin variant, linker layout and flash capacity; the UI cannot inject arbitrary compiler flags.
+
+| Profile | Flash | Build inputs | Validation |
+| --- | ---: | --- | --- |
+| Wemos D1 mini Pro | 16 MiB | `d1_mini`, `eagle.flash.16m14m.ld` | Physically verified |
+| Wemos/LOLIN D1 mini or D1 R2 | 4 MiB | `d1_mini`, `eagle.flash.4m1m.ld` | Community test |
+| NodeMCU 1.0 / ESP-12E | 4 MiB | `nodemcu`, `eagle.flash.4m1m.ld` | Community test |
+
+All three use the ESP8266 ROM bootloader through ESP Web Tools. ESP Web Tools can verify that the selected chip is an ESP8266, but it cannot distinguish these physical board models; choosing the correct profile remains the visitor's responsibility.
 
 ## The three computers
 
@@ -54,7 +66,7 @@ Wanix connects them by presenting resources as paths. The important runtime path
 1. `index.html` composes Linux, the ESP8266 toolchain, a RAM workspace and v86 into a Wanix namespace.
 2. `app.js` writes the personalized `main.cpp` into `/workspace`.
 3. JavaScript opens the VM terminal's `/data` file, sends the build command and reads the transcript.
-4. `direct-build.sh` compiles `main.cpp`, links it against the packaged Arduino core and SDK, and runs `wanix-elf2bin`.
+4. `direct-build.sh` resolves the selected board through a strict profile table, compiles `main.cpp`, links it against the packaged Arduino core and SDK, and runs `wanix-elf2bin`.
 5. The guest writes `firmware.bin` and `result.json` back into `/workspace/artifacts`.
 6. Browser JavaScript reads the firmware through the same Wanix namespace, hashes it and creates an ESP Web Tools manifest.
 7. The visitor can attach `wanix-term` to the same guest, inspect the source and artifacts, and run the compiler themselves.
@@ -70,7 +82,7 @@ The interactive terminal is detached while a build is running so the build contr
 - `direct-build.sh` is the guest-side compile, link and packaging pipeline.
 - `prepare-direct-assets.sh` builds the native Arduino core and packages the trimmed 32-bit Linux toolchain environment.
 - `tools/elf2bin` is a small Go implementation of the ESP8266 Arduino image format. Preparation verifies its output byte-for-byte against Arduino's `elf2bin.py`.
-- `platformio.ini` pins PlatformIO Espressif8266 2.6.3, Arduino-ESP8266 2.7.4 and Xtensa GCC 4.8.2 for `d1_mini_pro`.
+- `platformio.ini` pins PlatformIO Espressif8266 2.6.3, Arduino-ESP8266 2.7.4 and Xtensa GCC 4.8.2 for the three board profiles.
 
 Generated assets, local artifacts and device backups are ignored by Git.
 
@@ -125,7 +137,7 @@ The build works without attached hardware. Web Serial installation requires desk
 
 ## Physical validation and recovery
 
-The earlier split application/config version was physically verified on Luke's D1 mini Pro. The current full-application build has been produced and validated in Wanix, but has not yet been reflashed onto the board.
+The D1 mini Pro path has been physically exercised. The D1 mini/D1 R2 and NodeMCU profiles have build-level coverage but remain explicitly marked as community-test profiles until someone reports a successful physical flash and LED result.
 
 Before the earlier flash, the first 4 MiB of the board were saved to:
 

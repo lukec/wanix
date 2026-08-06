@@ -1,4 +1,40 @@
 const pageStarted = performance.now();
+const MIB = 1024 * 1024;
+const BOARD_PROFILES = Object.freeze({
+  d1_mini_pro: Object.freeze({
+    id: "d1_mini_pro",
+    name: "Wemos D1 mini Pro",
+    shortName: "D1 mini Pro",
+    flashBytes: 16 * MIB,
+    flashLabel: "16 MiB",
+    variant: "d1_mini",
+    linker: "eagle.flash.16m14m.ld",
+    verified: true,
+    markers: ["0x100000", "0x400000", "0xFFFFFF"],
+  }),
+  d1_mini: Object.freeze({
+    id: "d1_mini",
+    name: "Wemos/LOLIN D1 mini or D1 R2",
+    shortName: "D1 mini / D1 R2",
+    flashBytes: 4 * MIB,
+    flashLabel: "4 MiB",
+    variant: "d1_mini",
+    linker: "eagle.flash.4m1m.ld",
+    verified: false,
+    markers: ["0x040000", "0x100000", "0x3FFFFF"],
+  }),
+  nodemcuv2: Object.freeze({
+    id: "nodemcuv2",
+    name: "NodeMCU 1.0 / ESP-12E",
+    shortName: "NodeMCU 1.0",
+    flashBytes: 4 * MIB,
+    flashLabel: "4 MiB",
+    variant: "nodemcu",
+    linker: "eagle.flash.4m1m.ld",
+    verified: false,
+    markers: ["0x040000", "0x100000", "0x3FFFFF"],
+  }),
+});
 
 await Promise.all([
   customElements.whenDefined("wanix-namespace"),
@@ -8,6 +44,8 @@ await Promise.all([
 const system = document.querySelector("#linux");
 const vm = document.querySelector("#builder");
 const buildButton = document.querySelector("#build");
+const boardInput = document.querySelector("#board-profile");
+const boardSupport = document.querySelector("#board-support");
 const ownerInput = document.querySelector("#owner");
 const blinkInput = document.querySelector("#blink-period");
 const blinkValue = document.querySelector("#blink-value");
@@ -28,6 +66,13 @@ const elfSize = document.querySelector("#elf-size");
 const firmwareHash = document.querySelector("#firmware-hash");
 const firmwareRegion = document.querySelector("#firmware-region");
 const artifactSummary = document.querySelector("#artifact-summary");
+const flashMapName = document.querySelector("#flash-map-name");
+const flashMapSize = document.querySelector("#flash-map-size");
+const flashMarkers = [
+  document.querySelector("#flash-marker-1"),
+  document.querySelector("#flash-marker-2"),
+  document.querySelector("#flash-marker-end"),
+];
 const buildStages = Array.from(document.querySelectorAll(".build-stage"));
 const openShellButton = document.querySelector("#open-shell");
 const shellMount = document.querySelector("#guest-shell-mount");
@@ -37,7 +82,11 @@ const artifactCommand = document.querySelector("#artifact-command");
 const buildLabel = document.querySelector("#build-label");
 const openShellLabel = document.querySelector("#open-shell-label");
 const flashButton = document.querySelector("#flash-activate");
+const flashLabel = document.querySelector("#flash-label");
 const flashNextCue = document.querySelector("#flash-next-cue");
+const flashSafety = document.querySelector("#flash-safety");
+const boardGraphic = document.querySelector("#board-graphic");
+const boardCaptionModel = document.querySelector("#board-caption-model");
 const actionGuide = document.querySelector("#action-guide");
 const actionGuideStatus = document.querySelector("#action-guide-status");
 const actionGuideNext = document.querySelector("#action-guide-next");
@@ -52,8 +101,9 @@ let guestShell;
 
 updatePersonalization();
 setActionGuide("booting");
-ownerInput.addEventListener("input", updatePersonalization);
-blinkInput.addEventListener("input", updatePersonalization);
+boardInput.addEventListener("change", customizationChanged);
+ownerInput.addEventListener("input", customizationChanged);
+blinkInput.addEventListener("input", customizationChanged);
 actionGuideNext.addEventListener("click", (event) => {
   if (actionGuideNext.getAttribute("aria-disabled") === "true") event.preventDefault();
 });
@@ -91,6 +141,7 @@ vm._nsReady.then(async () => {
 });
 
 buildButton.addEventListener("click", async () => {
+  const profile = selectedBoardProfile();
   const owner = ownerInput.value.trim() || "friend";
   const ownerBytes = new TextEncoder().encode(owner).length;
   if (ownerBytes > 64) {
@@ -99,17 +150,19 @@ buildButton.addEventListener("click", async () => {
   }
 
   const cycleMs = Number(blinkInput.value);
-  const source = firmwareSource(owner, cycleMs);
+  const source = firmwareSource(owner, cycleMs, profile);
   const buildID = `build-${Date.now()}`;
   const resultPath = `workspace/artifacts/${buildID}/result.json`;
   const firmwarePath = `workspace/artifacts/${buildID}/firmware.bin`;
   const sourcePath = "workspace/main.cpp";
 
   closeGuestShell("The interactive terminal is closed while the build controller owns the terminal file.");
+  clearBuiltArtifact();
   buildButton.disabled = true;
   delete buildButton.dataset.nextAction;
   buildLabel.textContent = "Compiling firmware inside Wanix…";
   openShellButton.disabled = true;
+  boardInput.disabled = true;
   ownerInput.disabled = true;
   blinkInput.disabled = true;
   installer.hidden = true;
@@ -125,7 +178,7 @@ buildButton.addEventListener("click", async () => {
   const progress = document.createElement("pre");
   progress.textContent = "[browser] write main.cpp into the Wanix workspace\n";
   terminal.append(progress);
-  setStatus(`Building a complete application for ${owner}…`, true);
+  setStatus(`Building a complete ${profile.shortName} application for ${owner}…`, true);
   setActionGuide("compile", "Writing main.cpp, then compiling it inside Linux…");
   elapsed.textContent = "build running";
   setRuntime("Browser → Wanix", "JavaScript is writing /workspace/main.cpp.");
@@ -179,7 +232,7 @@ buildButton.addEventListener("click", async () => {
       }
     });
 
-    const command = `BUILD_ID=${buildID} APP_SOURCE=/${sourcePath} /bin/sh /workspace/build.sh; printf '\\n${doneMarker}:%s\\n' "$?"\n`;
+    const command = `BOARD_PROFILE=${profile.id} BUILD_ID=${buildID} APP_SOURCE=/${sourcePath} /bin/sh /workspace/build.sh; printf '\\n${doneMarker}:%s\\n' "$?"\n`;
     await terminalWriter.write(new TextEncoder().encode(command));
     const exitCode = await withTimeout(done, 5 * 60 * 1000, "Wanix build timed out");
     if (exitCode !== 0) throw new Error(`Linux build exited with status ${exitCode}`);
@@ -187,6 +240,9 @@ buildButton.addEventListener("click", async () => {
     await system.root.waitFor(resultPath, 5000);
     const result = JSON.parse(await system.root.readText(resultPath));
     if (!result.ok) throw new Error(`compiler exited with status ${result.exitCode}`);
+    if (result.boardProfile !== profile.id || result.flashBytes !== profile.flashBytes) {
+      throw new Error("guest returned an artifact for the wrong board profile");
+    }
 
     const firmware = await system.root.readFile(firmwarePath);
     const digest = await crypto.subtle.digest("SHA-256", firmware);
@@ -198,7 +254,7 @@ buildButton.addEventListener("click", async () => {
     firmwareURL = URL.createObjectURL(new Blob([firmware], { type: "application/octet-stream" }));
 
     const manifest = {
-      name: "Wanix Flash Lab",
+      name: `Wanix Flash Lab · ${profile.shortName}`,
       version: buildID,
       new_install_prompt_erase: true,
       builds: [{
@@ -211,17 +267,17 @@ buildButton.addEventListener("click", async () => {
     installer.hidden = false;
 
     download.href = firmwareURL;
-    download.download = `wanix-${slug(owner)}-${cycleMs}ms.bin`;
+    download.download = `wanix-${profile.id}-${slug(owner)}-${cycleMs}ms.bin`;
     download.hidden = false;
     previewOutput.disabled = false;
 
-    latestBuild = { owner, cycleMs, result, sha256 };
+    latestBuild = { owner, cycleMs, profile, result, sha256 };
     artifactCommand.textContent = `cat /workspace/artifacts/${buildID}/result.json`;
     renderArtifact(latestBuild);
     completeBuildStages();
     elapsed.textContent = `${wallSeconds}s browser · ${result.buildSeconds}s guest`;
-    setStatus(`Wanix returned a new ${formatBytes(result.firmwareBytes)} application. It is ready for Web Serial.`);
-    setActionGuide("flash");
+    setStatus(`Wanix returned a new ${formatBytes(result.firmwareBytes)} ${profile.shortName} application. It is ready for Web Serial.`);
+    setActionGuide("flash", `Firmware ready for ${profile.shortName}. Connect it and flash next.`);
     flashButton.dataset.nextAction = "true";
     flashNextCue.hidden = false;
     document.querySelector(".flash-lesson").dataset.nextAction = "true";
@@ -240,6 +296,7 @@ buildButton.addEventListener("click", async () => {
     terminalWriter?.releaseLock();
     buildButton.disabled = false;
     openShellButton.disabled = false;
+    boardInput.disabled = false;
     ownerInput.disabled = false;
     blinkInput.disabled = false;
     buildLabel.textContent = latestBuild ? "Recompile this firmware" : "Retry the Wanix build";
@@ -277,6 +334,7 @@ previewOutput.addEventListener("click", () => {
     "",
     "ESP8266 boot ROM @ 74880 baud: <boot chatter>",
     "Application @ 115200 baud:",
+    `Board profile: ${latestBuild.profile.name}`,
     `Hello, ${latestBuild.owner}! This entire application was compiled locally in Wanix.`,
     "",
     `Built-in LED: ${halfPeriod} ms ON / ${halfPeriod} ms OFF`,
@@ -285,20 +343,54 @@ previewOutput.addEventListener("click", () => {
   deviceOutput.hidden = false;
 });
 
+function customizationChanged() {
+  updatePersonalization();
+  if (!latestBuild) return;
+
+  clearBuiltArtifact();
+  buildButton.dataset.nextAction = "true";
+  buildLabel.textContent = "Compile matching firmware in Wanix";
+  setStatus("Settings changed. Compile again before flashing.");
+  setActionGuide("customize", "Settings changed. Compile the matching firmware next.");
+}
+
 function updatePersonalization() {
+  const profile = selectedBoardProfile();
   const owner = ownerInput.value.trim() || "friend";
   const cycleMs = Number(blinkInput.value);
   const hz = (1000 / cycleMs).toFixed(2);
   blinkValue.textContent = `${(cycleMs / 1000).toFixed(1)} seconds · ${hz} Hz`;
   document.documentElement.style.setProperty("--blink-period", `${cycleMs}ms`);
-  sourcePreview.textContent = firmwareSource(owner, cycleMs);
+  updateBoardProfile(profile);
+  sourcePreview.textContent = firmwareSource(owner, cycleMs, profile);
 }
 
-function firmwareSource(owner, cycleMs) {
+function selectedBoardProfile() {
+  return BOARD_PROFILES[boardInput.value] || BOARD_PROFILES.d1_mini_pro;
+}
+
+function updateBoardProfile(profile) {
+  boardSupport.dataset.level = profile.verified ? "verified" : "community";
+  boardSupport.textContent = profile.verified
+    ? `Verified on hardware · ${profile.variant} pins · ${profile.linker}`
+    : `Community test · build validated, physical flash unverified · ${profile.variant} pins · ${profile.linker}`;
+  flashMapName.textContent = `${profile.shortName.toUpperCase()} FLASH MAP`;
+  flashMapSize.textContent = profile.flashLabel;
+  flashMarkers.forEach((marker, index) => { marker.textContent = profile.markers[index]; });
+  boardGraphic.setAttribute("aria-label", `Stylized ${profile.name}`);
+  boardCaptionModel.textContent = `${profile.shortName} ·`;
+  flashSafety.textContent = `${profile.name} uses an ESP8266 with ${profile.flashLabel} flash. ESP Web Tools verifies the chip family, not the board model. Installation replaces the application at 0x000000.`;
+  flashLabel.textContent = `Choose ${profile.shortName} & flash`;
+  if (!latestBuild) artifactSummary.textContent = `No artifact yet. The ${profile.flashLabel} profile will be written from offset zero.`;
+}
+
+function firmwareSource(owner, cycleMs, profile) {
   const halfPeriod = Math.round(cycleMs / 2);
   return `#include <Arduino.h>
 
 constexpr char kOwner[] = ${cppString(owner)};
+constexpr char kBoardProfile[] = ${cppString(profile.id)};
+constexpr char kBoardName[] = ${cppString(profile.name)};
 constexpr uint32_t kBlinkHalfPeriodMs = ${halfPeriod};
 
 void setup() {
@@ -308,13 +400,18 @@ void setup() {
 
   delay(500);
   Serial.println();
+  Serial.print("Board profile: ");
+  Serial.print(kBoardName);
+  Serial.print(" (");
+  Serial.print(kBoardProfile);
+  Serial.println(")");
   Serial.print("Hello, ");
   Serial.print(kOwner);
   Serial.println("! This entire application was compiled locally in Wanix.");
 }
 
 void loop() {
-  // The D1 mini Pro LED is active-low.
+  // These ESP8266 profiles use an active-low built-in LED.
   digitalWrite(LED_BUILTIN, LOW);
   delay(kBlinkHalfPeriodMs);
   digitalWrite(LED_BUILTIN, HIGH);
@@ -359,10 +456,31 @@ function renderArtifact(build) {
   firmwareSize.textContent = formatBytes(build.result.firmwareBytes);
   elfSize.textContent = formatBytes(build.result.elfBytes);
   firmwareHash.textContent = `${build.sha256.slice(0, 16)}…${build.sha256.slice(-8)}`;
-  const percent = build.result.firmwareBytes / (16 * 1024 * 1024) * 100;
+  const percent = build.result.firmwareBytes / build.profile.flashBytes * 100;
   firmwareRegion.style.width = `${Math.max(3.5, percent)}%`;
-  firmwareRegion.title = `${percent.toFixed(2)}% of the 16 MiB flash chip`;
-  artifactSummary.textContent = `${formatBytes(build.result.firmwareBytes)} starts at 0x000000 (${percent.toFixed(2)}% of the chip). The bar is widened so the new application remains visible.`;
+  firmwareRegion.title = `${percent.toFixed(2)}% of the ${build.profile.flashLabel} flash chip`;
+  artifactSummary.textContent = `${formatBytes(build.result.firmwareBytes)} for ${build.profile.shortName} starts at 0x000000 (${percent.toFixed(2)}% of the chip). The bar is widened so the new application remains visible.`;
+}
+
+function clearBuiltArtifact() {
+  latestBuild = undefined;
+  if (firmwareURL) URL.revokeObjectURL(firmwareURL);
+  if (manifestURL) URL.revokeObjectURL(manifestURL);
+  firmwareURL = undefined;
+  manifestURL = undefined;
+  installer.hidden = true;
+  download.hidden = true;
+  previewOutput.disabled = true;
+  deviceOutput.hidden = true;
+  delete flashButton.dataset.nextAction;
+  flashNextCue.hidden = true;
+  document.querySelector(".flash-lesson").removeAttribute("data-next-action");
+  firmwareSize.textContent = "—";
+  elfSize.textContent = "—";
+  firmwareHash.textContent = "Build to calculate";
+  firmwareRegion.style.width = "3.5%";
+  firmwareRegion.removeAttribute("title");
+  updateBoardProfile(selectedBoardProfile());
 }
 
 function setRuntime(location, detail) {
@@ -388,7 +506,7 @@ function setActionGuide(phase, message) {
       disabled: true,
     },
     customize: {
-      status: "Builder ready. Start with your name and blink rate.",
+      status: "Builder ready. Choose a board, name and blink rate.",
       next: "Start: customize",
       icon: "↓",
       href: "#source-title",

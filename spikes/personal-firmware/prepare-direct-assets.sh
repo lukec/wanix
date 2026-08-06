@@ -73,6 +73,7 @@ mkdir -p "$esp8266/cores" "$esp8266/variants"
 cp -R "$framework/cores/esp8266" "$esp8266/cores/"
 cp -R "$framework/variants/d1_mini" "$esp8266/variants/"
 cp -R "$framework/variants/generic" "$esp8266/variants/"
+cp -R "$framework/variants/nodemcu" "$esp8266/variants/"
 mkdir -p "$esp8266/sdk" "$esp8266/sdk/libc" "$esp8266/sdk/lwip2"
 cp -R "$framework/tools/sdk/include" "$esp8266/sdk/"
 cp -R "$framework/tools/sdk/libc/xtensa-lx106-elf" "$esp8266/sdk/libc/"
@@ -95,6 +96,7 @@ for library in phy pp net80211 wpa crypto main wps espnow smartconfig airkiss wp
 done
 
 cp "$framework/tools/sdk/ld/eagle.flash.16m14m.ld" \
+    "$framework/tools/sdk/ld/eagle.flash.4m1m.ld" \
     "$framework/tools/sdk/ld/eagle.rom.addr.v6.ld" \
     "$build_cache/ld/local.eagle.app.v6.common.ld" \
     "$esp8266/ld/"
