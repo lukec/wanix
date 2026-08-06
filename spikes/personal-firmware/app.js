@@ -13,6 +13,7 @@ const blinkInput = document.querySelector("#blink-period");
 const blinkValue = document.querySelector("#blink-value");
 const sourcePreview = document.querySelector("#source-preview");
 const status = document.querySelector("#status");
+const statusMessage = document.querySelector("#status-message");
 const elapsed = document.querySelector("#elapsed");
 const terminal = document.querySelector("#terminal");
 const installer = document.querySelector("#installer");
@@ -33,6 +34,16 @@ const shellMount = document.querySelector("#guest-shell-mount");
 const shellStatus = document.querySelector("#shell-status");
 const terminalPath = document.querySelector("#terminal-path");
 const artifactCommand = document.querySelector("#artifact-command");
+const buildLabel = document.querySelector("#build-label");
+const openShellLabel = document.querySelector("#open-shell-label");
+const flashButton = document.querySelector("#flash-activate");
+const flashNextCue = document.querySelector("#flash-next-cue");
+const actionGuide = document.querySelector("#action-guide");
+const actionGuideStatus = document.querySelector("#action-guide-status");
+const actionGuideNext = document.querySelector("#action-guide-next");
+const actionGuideNextLabel = document.querySelector("#action-guide-next-label");
+const actionProgressBar = document.querySelector("#action-progress-bar");
+const actionSteps = Array.from(document.querySelectorAll("[data-action-step]"));
 
 let firmwareURL;
 let manifestURL;
@@ -40,33 +51,42 @@ let latestBuild;
 let guestShell;
 
 updatePersonalization();
+setActionGuide("booting");
 ownerInput.addEventListener("input", updatePersonalization);
 blinkInput.addEventListener("input", updatePersonalization);
+actionGuideNext.addEventListener("click", (event) => {
+  if (actionGuideNext.getAttribute("aria-disabled") === "true") event.preventDefault();
+});
 
 system.addEventListener("error", (event) => {
-  status.textContent = `Wanix namespace failed: ${event.detail.error.message}`;
+  setStatus(`Wanix namespace failed: ${event.detail.error.message}`);
+  setActionGuide("error", "Wanix could not start. Reload the page to try again.");
   namespaceState.textContent = "failed";
 });
 
 vm.addEventListener("error", (event) => {
-  status.textContent = `Linux guest failed: ${event.detail.error.message}`;
+  setStatus(`Linux guest failed: ${event.detail.error.message}`);
+  setActionGuide("error", "Linux could not start. Reload the page to try again.");
 });
 
 vm._nsReady.then(async () => {
   namespaceState.textContent = "mounted";
   setRuntime("Linux guest", "Wanix is waiting for v86 to expose its task device.");
-  status.textContent = "The namespace is ready. Linux is booting in v86…";
+  setStatus("The namespace is ready. Linux is booting in v86…", true);
+  setActionGuide("booting", "Wanix is ready; Linux is booting in this tab…");
   const taskPath = `${vm.path}/guest/#task`;
   await system.root.waitFor(taskPath, 120000);
 
   buildButton.disabled = false;
-  buildButton.textContent = "Build the complete firmware in Wanix";
+  buildButton.dataset.nextAction = "true";
+  buildLabel.textContent = "Compile my firmware in Wanix";
   openShellButton.disabled = false;
   terminalPath.textContent = `${vm.term}/data`;
   shellStatus.textContent = "The guest is ready. Open it before or after a build.";
   const bootSeconds = ((performance.now() - pageStarted) / 1000).toFixed(1);
   elapsed.textContent = `builder ready in ${bootSeconds}s`;
-  status.textContent = `Ready. Wanix composed the namespace and booted Linux in ${bootSeconds}s.`;
+  setStatus(`Ready. Wanix composed the namespace and booted Linux in ${bootSeconds}s.`);
+  setActionGuide("customize");
   setRuntime("Browser host", "The UI is ready; Linux waits behind a Wanix terminal file.");
 });
 
@@ -74,7 +94,7 @@ buildButton.addEventListener("click", async () => {
   const owner = ownerInput.value.trim() || "friend";
   const ownerBytes = new TextEncoder().encode(owner).length;
   if (ownerBytes > 64) {
-    status.textContent = `That name is ${ownerBytes} UTF-8 bytes; please keep it to 64.`;
+    setStatus(`That name is ${ownerBytes} UTF-8 bytes; please keep it to 64.`);
     return;
   }
 
@@ -87,10 +107,15 @@ buildButton.addEventListener("click", async () => {
 
   closeGuestShell("The interactive terminal is closed while the build controller owns the terminal file.");
   buildButton.disabled = true;
+  delete buildButton.dataset.nextAction;
+  buildLabel.textContent = "Compiling firmware inside Wanix…";
   openShellButton.disabled = true;
   ownerInput.disabled = true;
   blinkInput.disabled = true;
   installer.hidden = true;
+  delete flashButton.dataset.nextAction;
+  flashNextCue.hidden = true;
+  document.querySelector(".flash-lesson").removeAttribute("data-next-action");
   download.hidden = true;
   previewOutput.disabled = true;
   deviceOutput.hidden = true;
@@ -100,7 +125,8 @@ buildButton.addEventListener("click", async () => {
   const progress = document.createElement("pre");
   progress.textContent = "[browser] write main.cpp into the Wanix workspace\n";
   terminal.append(progress);
-  status.textContent = `Building a complete application for ${owner}…`;
+  setStatus(`Building a complete application for ${owner}…`, true);
+  setActionGuide("compile", "Writing main.cpp, then compiling it inside Linux…");
   elapsed.textContent = "build running";
   setRuntime("Browser → Wanix", "JavaScript is writing /workspace/main.cpp.");
 
@@ -194,13 +220,19 @@ buildButton.addEventListener("click", async () => {
     renderArtifact(latestBuild);
     completeBuildStages();
     elapsed.textContent = `${wallSeconds}s browser · ${result.buildSeconds}s guest`;
-    status.textContent = `Wanix returned a new ${formatBytes(result.firmwareBytes)} application. It is ready for Web Serial.`;
+    setStatus(`Wanix returned a new ${formatBytes(result.firmwareBytes)} application. It is ready for Web Serial.`);
+    setActionGuide("flash");
+    flashButton.dataset.nextAction = "true";
+    flashNextCue.hidden = false;
+    document.querySelector(".flash-lesson").dataset.nextAction = "true";
     shellStatus.textContent = "Build complete. Reopen the same guest and inspect the files it produced.";
     setRuntime("Browser host", `Wanix returned /workspace/artifacts/${buildID}/firmware.bin.`);
   } catch (error) {
     progress.textContent = `${error}${terminalOutput ? `\n${terminalOutput}` : ""}`;
     elapsed.textContent = "build failed";
-    status.textContent = `Build failed: ${error.message}`;
+    setStatus(`Build failed: ${error.message}`);
+    setActionGuide("error", "The build stopped. Inspect the transcript, then retry.");
+    buildButton.dataset.nextAction = "true";
     shellStatus.textContent = "The guest is still available; open it to inspect the failed build.";
     setRuntime("Browser host", "The build stopped; inspect the Linux transcript.");
   } finally {
@@ -210,7 +242,7 @@ buildButton.addEventListener("click", async () => {
     openShellButton.disabled = false;
     ownerInput.disabled = false;
     blinkInput.disabled = false;
-    buildButton.textContent = "Rebuild the complete firmware";
+    buildLabel.textContent = latestBuild ? "Recompile this firmware" : "Retry the Wanix build";
   }
 });
 
@@ -230,7 +262,7 @@ openShellButton.addEventListener("click", async () => {
   guestShell.setAttribute("scrollback", "2000");
   guestShell.setAttribute("cursor-blink", "true");
   shellMount.append(guestShell);
-  openShellButton.textContent = "Close the Linux terminal";
+  openShellLabel.textContent = "Close the Linux terminal";
   shellStatus.textContent = `Attached directly to ${vm.term}/data. This sandbox disappears on reload.`;
   setRuntime("Linux guest", "Your keyboard is attached through wanix-term.");
   await guestShell._nsReady;
@@ -304,11 +336,14 @@ function updateBuildStages(output) {
     setBuildStage("compile", "done");
     setBuildStage("link", "done");
     setBuildStage("package", "active");
+    setActionGuide("package");
   } else if (output.includes("[wanix] 2/3")) {
     setBuildStage("compile", "done");
     setBuildStage("link", "active");
+    setActionGuide("link");
   } else if (output.includes("[wanix] 1/3")) {
     setBuildStage("compile", "active");
+    setActionGuide("compile");
   }
 }
 
@@ -335,13 +370,103 @@ function setRuntime(location, detail) {
   runtimeDetail.textContent = detail;
 }
 
+function setStatus(message, busy = false) {
+  statusMessage.textContent = message;
+  if (busy) status.dataset.busy = "true";
+  else delete status.dataset.busy;
+}
+
+function setActionGuide(phase, message) {
+  const phases = {
+    booting: {
+      status: "Starting browser-local Linux…",
+      next: "Builder starting",
+      icon: "⌛",
+      href: "#source-title",
+      progress: 8,
+      active: -1,
+      disabled: true,
+    },
+    customize: {
+      status: "Builder ready. Start with your name and blink rate.",
+      next: "Start: customize",
+      icon: "↓",
+      href: "#source-title",
+      progress: 18,
+      active: 0,
+    },
+    compile: {
+      status: "Compiling your generated C++ inside Linux…",
+      next: "Build running",
+      icon: "⚙",
+      href: "#build-title",
+      progress: 43,
+      active: 1,
+      disabled: true,
+    },
+    link: {
+      status: "Compile complete. Linking your code with the Arduino core…",
+      next: "Build running",
+      icon: "⚙",
+      href: "#build-title",
+      progress: 56,
+      active: 1,
+      disabled: true,
+    },
+    package: {
+      status: "Link complete. Packaging the flashable firmware image…",
+      next: "Build running",
+      icon: "⚙",
+      href: "#build-title",
+      progress: 68,
+      active: 1,
+      disabled: true,
+    },
+    flash: {
+      status: "Firmware ready. Connect your ESP8266 and flash it next.",
+      next: "Next: connect & flash",
+      icon: "⚡",
+      href: "#flash-title",
+      progress: 82,
+      active: 2,
+    },
+    error: {
+      status: "The build stopped. Check the transcript and try again.",
+      next: "Back to build controls",
+      icon: "↺",
+      href: "#source-title",
+      progress: 38,
+      active: 1,
+      error: true,
+    },
+  };
+  const config = phases[phase];
+  actionGuide.dataset.phase = phase;
+  actionGuideStatus.textContent = message || config.status;
+  actionGuideNext.href = config.href;
+  actionGuideNext.querySelector(".button-icon").textContent = config.icon;
+  actionGuideNextLabel.textContent = config.next;
+  actionGuideNext.setAttribute("aria-disabled", config.disabled ? "true" : "false");
+  actionProgressBar.style.width = `${config.progress}%`;
+
+  for (const [index, step] of actionSteps.entries()) {
+    delete step.dataset.state;
+    step.removeAttribute("aria-current");
+    if (index < config.active) step.dataset.state = "done";
+    if (index === config.active) {
+      step.dataset.state = config.error ? "error" : "active";
+      step.setAttribute("aria-current", "step");
+    }
+  }
+}
+
 function closeGuestShell(message) {
   if (guestShell) {
     guestShell.remove();
     guestShell = undefined;
     shellMount.innerHTML = `<div class="shell-placeholder"><span>&gt;_</span><p>Open the terminal to explore the Linux machine.</p></div>`;
   }
-  openShellButton.textContent = "Open the Linux terminal";
+  openShellLabel.textContent = "Open the Linux terminal";
   if (message) shellStatus.textContent = message;
 }
 

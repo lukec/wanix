@@ -5,10 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Wanix Flash Lab</title>
   <meta name="description" content="Learn Wanix by compiling and flashing a complete ESP8266 application locally inside one browser tab—without a build server.">
-  <link rel="stylesheet" href="./style.css?v=4">
+  <link rel="stylesheet" href="./style.css?v=5">
   <script type="module" src="./vendor/wanix.min.js"></script>
   <script type="module" src="https://unpkg.com/esp-web-tools@10/dist/web/install-button.js?module"></script>
-  <script type="module" src="./app.js"></script>
+  <script type="module" src="./app.js?v=2"></script>
 </head>
 <body>
   <div class="workbench">
@@ -26,9 +26,29 @@
       </aside>
     </header>
 
+    <nav id="action-guide" class="action-guide" data-phase="booting" aria-label="Your interactive build path">
+      <div class="action-guide-head">
+        <div>
+          <p class="action-guide-kicker">INTERACTIVE LAB</p>
+          <strong id="action-guide-status">Starting browser-local Linux…</strong>
+          <span class="action-guide-note">The numbered cards teach. This guide tracks the three things you do.</span>
+        </div>
+        <a id="action-guide-next" class="action-guide-next" href="#source-title" aria-disabled="true">
+          <span class="button-icon" aria-hidden="true">⌛</span>
+          <span id="action-guide-next-label">Builder starting</span>
+        </a>
+      </div>
+      <ol class="action-steps">
+        <li data-action-step="customize"><span>1</span><strong>Customize</strong><small>Name + blink rate</small></li>
+        <li data-action-step="compile"><span>2</span><strong>Compile</strong><small>Build inside Wanix</small></li>
+        <li data-action-step="flash"><span>3</span><strong>Flash</strong><small>Choose your ESP8266</small></li>
+      </ol>
+      <div class="action-progress" aria-hidden="true"><span id="action-progress-bar"></span></div>
+    </nav>
+
     <section class="lesson intro" aria-labelledby="intro-title">
       <div class="lesson-number">00</div>
-      <button class="how-button" type="button" popovertarget="how-00">How this works <span aria-hidden="true">+</span></button>
+      <button class="how-button" type="button" popovertarget="how-00"><span class="how-icon" aria-hidden="true">i</span> How this works</button>
       <div class="lesson-heading">
         <p class="kicker">THE BIG IDEA</p>
         <h2 id="intro-title">One tab. Three computers.</h2>
@@ -94,7 +114,7 @@ ESP8266 target   physical Xtensa microcontroller</code></pre>
     <main>
       <section class="lesson namespace-lesson" aria-labelledby="namespace-title">
         <div class="lesson-number">01</div>
-        <button class="how-button" type="button" popovertarget="how-01">How this works <span aria-hidden="true">+</span></button>
+        <button class="how-button" type="button" popovertarget="how-01"><span class="how-icon" aria-hidden="true">i</span> How this works</button>
         <div class="lesson-heading">
           <p class="kicker">COMPOSE THE COMPUTER</p>
           <h2 id="namespace-title">Wanix turns resources into one tree.</h2>
@@ -161,7 +181,7 @@ ESP8266 target   physical Xtensa microcontroller</code></pre>
 
       <section class="lesson source-lesson" aria-labelledby="source-title">
         <div class="lesson-number">02</div>
-        <button class="how-button" type="button" popovertarget="how-02">How this works <span aria-hidden="true">+</span></button>
+        <button class="how-button" type="button" popovertarget="how-02"><span class="how-icon" aria-hidden="true">i</span> How this works</button>
         <div class="lesson-heading">
           <p class="kicker">MAKE IT YOURS</p>
           <h2 id="source-title">Change what the hardware does.</h2>
@@ -171,6 +191,10 @@ ESP8266 target   physical Xtensa microcontroller</code></pre>
         <div class="source-grid">
           <form class="control-module" onsubmit="return false">
             <div class="module-lights"><i></i><i></i><i></i></div>
+            <div class="action-callout">
+              <span aria-hidden="true">1</span>
+              <p><strong>Start here</strong> Change either value—or keep the defaults—then compile a complete firmware image.</p>
+            </div>
             <label for="owner">Who is the board blinking for?</label>
             <input id="owner" value="Luke" maxlength="64" autocomplete="off">
 
@@ -181,8 +205,14 @@ ESP8266 target   physical Xtensa microcontroller</code></pre>
               <span class="mini-led" aria-hidden="true"></span>
             </div>
 
-            <button id="build" disabled>Booting the Wanix builder…</button>
-            <p id="status" class="status" aria-live="polite">Loading Wanix and starting Linux.</p>
+            <button id="build" disabled>
+              <span class="button-icon" aria-hidden="true">⚙</span>
+              <span id="build-label">Starting the Wanix builder…</span>
+            </button>
+            <p id="status" class="status" data-busy="true" aria-live="polite">
+              <span class="status-spinner" aria-hidden="true"></span>
+              <span id="status-message">Loading Wanix and starting Linux.</span>
+            </p>
           </form>
 
           <div class="code-panel dark-panel">
@@ -218,7 +248,7 @@ digitalWrite(LED_BUILTIN, HIGH); // LED off</code></pre>
 
       <section class="lesson build-lesson" aria-labelledby="build-title">
         <div class="lesson-number">03</div>
-        <button class="how-button" type="button" popovertarget="how-03">How this works <span aria-hidden="true">+</span></button>
+        <button class="how-button" type="button" popovertarget="how-03"><span class="how-icon" aria-hidden="true">i</span> How this works</button>
         <div class="lesson-heading">
           <p class="kicker">CROSS THE VM BOUNDARY</p>
           <h2 id="build-title">Drive Linux through a Wanix terminal.</h2>
@@ -265,7 +295,7 @@ BUILD_ID=build-… APP_SOURCE=/workspace/main.cpp \
 
       <section class="lesson artifact-lesson" aria-labelledby="artifact-title">
         <div class="lesson-number">04</div>
-        <button class="how-button" type="button" popovertarget="how-04">How this works <span aria-hidden="true">+</span></button>
+        <button class="how-button" type="button" popovertarget="how-04"><span class="how-icon" aria-hidden="true">i</span> How this works</button>
         <div class="lesson-heading">
           <p class="kicker">RETURN TO THE BROWSER</p>
           <h2 id="artifact-title">The output becomes another file.</h2>
@@ -326,7 +356,7 @@ const url = URL.createObjectURL(new Blob([firmware]));</code></pre>
 
       <section class="lesson shell-lesson" aria-labelledby="shell-title">
         <div class="lesson-number">05</div>
-        <button class="how-button" type="button" popovertarget="how-05">How this works <span aria-hidden="true">+</span></button>
+        <button class="how-button" type="button" popovertarget="how-05"><span class="how-icon" aria-hidden="true">i</span> How this works</button>
         <div class="lesson-heading">
           <p class="kicker">OPEN THE MACHINE</p>
           <h2 id="shell-title">Don’t take our word for it. Look around.</h2>
@@ -349,7 +379,10 @@ const url = URL.createObjectURL(new Blob([firmware]));</code></pre>
               <code>xtensa-lx106-elf-g++ --version</code>
               <code id="artifact-command">find /workspace/artifacts -type f</code>
             </div>
-            <button id="open-shell" class="shell-button" disabled>Open the Linux terminal</button>
+            <button id="open-shell" class="shell-button" disabled>
+              <span class="button-icon terminal-icon" aria-hidden="true">&gt;_</span>
+              <span id="open-shell-label">Open the Linux terminal</span>
+            </button>
             <p id="shell-status" class="shell-status">The shell becomes available when the Wanix VM is ready.</p>
           </div>
 
@@ -391,7 +424,7 @@ term.setAttribute("scrollback", "2000");</code></pre>
 
       <section class="lesson flash-lesson" aria-labelledby="flash-title">
         <div class="lesson-number">06</div>
-        <button class="how-button" type="button" popovertarget="how-06">How this works <span aria-hidden="true">+</span></button>
+        <button class="how-button" type="button" popovertarget="how-06"><span class="how-icon" aria-hidden="true">i</span> How this works</button>
         <div class="lesson-heading">
           <p class="kicker">ENTER THE PHYSICAL WORLD</p>
           <h2 id="flash-title">A human opens the USB door.</h2>
@@ -411,18 +444,25 @@ term.setAttribute("scrollback", "2000");</code></pre>
           </div>
 
           <div class="flash-controls">
+            <div id="flash-next-cue" class="action-callout action-callout-next" hidden>
+              <span aria-hidden="true">3</span>
+              <p><strong>Next action</strong> Connect your board over USB, then let the browser choose it and install your new firmware.</p>
+            </div>
             <div class="safety-note">
               <strong>Before you flash</strong>
               <p>This lab targets a Wemos D1 mini Pro with an ESP8266 and 16 MiB flash. Installation replaces the application at offset <code>0x000000</code>.</p>
             </div>
             <esp-web-install-button id="installer" hidden>
-              <button slot="activate" class="flash-button">Choose D1 mini Pro &amp; flash</button>
+              <button id="flash-activate" slot="activate" class="flash-button">
+                <span class="button-icon" aria-hidden="true">⚡</span>
+                <span>Choose D1 mini Pro &amp; flash</span>
+              </button>
               <span slot="unsupported">Web Serial is unavailable here. Use desktop Chrome or Edge.</span>
               <span slot="not-allowed">Serve this page from HTTPS or localhost to use Web Serial.</span>
             </esp-web-install-button>
             <div class="secondary-actions">
-              <a id="download" class="secondary-button" hidden>Download firmware.bin</a>
-              <button id="preview-output" class="secondary-button" disabled>Preview expected output</button>
+              <a id="download" class="secondary-button" hidden><span class="button-icon" aria-hidden="true">↓</span> Download firmware.bin</a>
+              <button id="preview-output" class="secondary-button" disabled><span class="button-icon" aria-hidden="true">◎</span> Preview expected output</button>
             </div>
             <pre id="device-output" class="device-output" hidden></pre>
           </div>
