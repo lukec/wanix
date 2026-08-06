@@ -5,10 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Wanix Flash Lab</title>
   <meta name="description" content="Learn Wanix by compiling and flashing a complete ESP8266 application locally inside one browser tab—without a build server.">
-  <link rel="stylesheet" href="./style.css?v=7">
+  <link rel="stylesheet" href="./style.css?v=8">
   <script type="module" src="./vendor/wanix.min.js"></script>
   <script type="module" src="https://unpkg.com/esp-web-tools@10/dist/web/install-button.js?module"></script>
-  <script type="module" src="./app.js?v=4"></script>
+  <script type="module" src="./app.js?v=5"></script>
 </head>
 <body>
   <div class="workbench">
@@ -398,10 +398,10 @@ const url = URL.createObjectURL(new Blob([firmware]));</code></pre>
           <div class="interactive-shell dark-panel">
             <div class="panel-bar"><span>INTERACTIVE WANIX TERMINAL</span><span>same guest · same files</span></div>
             <div id="guest-shell-mount" class="guest-shell-mount">
-              <div class="shell-placeholder">
-                <span>&gt;_</span>
-                <p>Open the terminal to explore the Linux machine.</p>
-              </div>
+              <button class="shell-placeholder" type="button" disabled>
+                <span class="shell-placeholder-icon" aria-hidden="true">&gt;_</span>
+                <span class="shell-placeholder-copy">Click to open the terminal and explore Linux.</span>
+              </button>
             </div>
           </div>
         </div>

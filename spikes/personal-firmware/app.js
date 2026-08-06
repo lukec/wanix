@@ -127,7 +127,7 @@ vm._nsReady.then(async () => {
   buildButton.disabled = false;
   buildButton.dataset.nextAction = "true";
   buildLabel.textContent = "Compile my firmware in Wanix";
-  openShellButton.disabled = false;
+  setShellControlsEnabled(true);
   terminalPath.textContent = `${vm.term}/data`;
   shellStatus.textContent = "The guest is ready. Open it before or after a build.";
   const bootSeconds = ((performance.now() - pageStarted) / 1000).toFixed(1);
@@ -157,7 +157,7 @@ buildButton.addEventListener("click", async () => {
   buildButton.disabled = true;
   delete buildButton.dataset.nextAction;
   buildLabel.textContent = "Compiling firmware inside Wanix…";
-  openShellButton.disabled = true;
+  setShellControlsEnabled(false);
   boardInput.disabled = true;
   ownerInput.disabled = true;
   blinkInput.disabled = true;
@@ -288,7 +288,7 @@ buildButton.addEventListener("click", async () => {
     await terminalReader?.cancel().catch(() => {});
     terminalWriter?.releaseLock();
     buildButton.disabled = false;
-    openShellButton.disabled = false;
+    setShellControlsEnabled(true);
     boardInput.disabled = false;
     ownerInput.disabled = false;
     blinkInput.disabled = false;
@@ -316,6 +316,19 @@ openShellButton.addEventListener("click", async () => {
   shellStatus.textContent = `Attached directly to ${vm.term}/data. This sandbox disappears on reload.`;
   await guestShell._nsReady;
   guestShell.focus();
+});
+
+shellMount.addEventListener("click", (event) => {
+  const placeholder = event.target.closest(".shell-placeholder");
+  if (placeholder && !placeholder.disabled) openShellButton.click();
+});
+
+shellMount.addEventListener("keydown", (event) => {
+  if (event.key !== "Enter" && event.key !== " ") return;
+  const placeholder = event.target.closest(".shell-placeholder");
+  if (!placeholder || placeholder.disabled) return;
+  event.preventDefault();
+  openShellButton.click();
 });
 
 previewOutput.addEventListener("click", () => {
@@ -569,10 +582,16 @@ function closeGuestShell(message) {
   if (guestShell) {
     guestShell.remove();
     guestShell = undefined;
-    shellMount.innerHTML = `<div class="shell-placeholder"><span>&gt;_</span><p>Open the terminal to explore the Linux machine.</p></div>`;
+    shellMount.innerHTML = `<button class="shell-placeholder" type="button"${openShellButton.disabled ? " disabled" : ""}><span class="shell-placeholder-icon" aria-hidden="true">&gt;_</span><span class="shell-placeholder-copy">Click to open the terminal and explore Linux.</span></button>`;
   }
   openShellLabel.textContent = "Open the Linux terminal";
   if (message) shellStatus.textContent = message;
+}
+
+function setShellControlsEnabled(enabled) {
+  openShellButton.disabled = !enabled;
+  const placeholder = shellMount.querySelector(".shell-placeholder");
+  if (placeholder) placeholder.disabled = !enabled;
 }
 
 function formatBytes(bytes) {
